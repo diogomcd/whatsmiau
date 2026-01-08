@@ -16,7 +16,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/puzpuzpuz/xsync/v4 v4.1.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
-	go.mau.fi/whatsmeow v0.0.0-20251217143725-11cf47c62d32
+	go.mau.fi/whatsmeow v0.0.0-20260107124630-ccfa04f8e445
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.48.0
 	golang.org/x/oauth2 v0.30.0

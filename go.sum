@@ -164,6 +164,8 @@ go.mau.fi/whatsmeow v0.0.0-20251216102424-56a8e44b0cec h1:pNU+bpMGDodCJt6ufF1Imh
 go.mau.fi/whatsmeow v0.0.0-20251216102424-56a8e44b0cec/go.mod h1:S4OWR9+hTx+54+jRzl+NfRBXnGpPm5IRPyhXB7haSd0=
 go.mau.fi/whatsmeow v0.0.0-20251217143725-11cf47c62d32 h1:NeE9eEYY4kEJVCfCXaAU27LgAPugPHRHJdC9IpXFPzI=
 go.mau.fi/whatsmeow v0.0.0-20251217143725-11cf47c62d32/go.mod h1:S4OWR9+hTx+54+jRzl+NfRBXnGpPm5IRPyhXB7haSd0=
+go.mau.fi/whatsmeow v0.0.0-20260107124630-ccfa04f8e445 h1:uErkBGVPgvwvI2T4aEVIUMNm0J2+uNPSWbQ96cQDvss=
+go.mau.fi/whatsmeow v0.0.0-20260107124630-ccfa04f8e445/go.mod h1:S4OWR9+hTx+54+jRzl+NfRBXnGpPm5IRPyhXB7haSd0=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
 go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
