@@ -87,7 +87,7 @@ func (s *RedisInstance) Update(ctx context.Context, id string, toUpdate *models.
 			oldInstance.Webhook.Headers[k] = v
 		}
 	}
-	if toUpdate.Webhook.Events != nil && len(toUpdate.Webhook.Events) > 0 {
+	if toUpdate.Webhook.Events != nil {
 		oldInstance.Webhook.Events = toUpdate.Webhook.Events
 	}
 
