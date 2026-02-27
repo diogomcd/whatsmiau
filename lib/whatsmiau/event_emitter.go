@@ -44,8 +44,6 @@ func (s *Whatsmiau) getInstance(id string) *models.Instance {
 		return nil
 	}
 
-	s.instanceCache.Store(id, res[0])
-
 	return &res[0]
 }
 

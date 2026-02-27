@@ -404,7 +404,7 @@ func (s *Whatsmiau) GetJidLid(ctx context.Context, id string, jid types.JID) (st
 
 func (s *Whatsmiau) extractJidLid(ctx context.Context, id string, jid types.JID) (string, string) {
 	client, ok := s.clients.Load(id)
-	if !ok {
+	if !ok || client == nil || client.Store == nil || client.Store.LIDs == nil {
 		return jid.ToNonAD().String(), ""
 	}
 
