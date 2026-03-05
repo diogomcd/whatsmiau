@@ -32,6 +32,10 @@ func (s *Whatsmiau) SendText(ctx context.Context, data *SendText) (*SendTextResp
 		return nil, whatsmeow.ErrClientIsNil
 	}
 
+	if data.RemoteJID == nil {
+		return nil, fmt.Errorf("remote_jid is required")
+	}
+
 	resolved := s.resolveJID(ctx, client, *data.RemoteJID)
 	data.RemoteJID = &resolved
 
@@ -89,6 +93,10 @@ func (s *Whatsmiau) SendAudio(ctx context.Context, data *SendAudioRequest) (*Sen
 	client, ok := s.clients.Load(data.InstanceID)
 	if !ok {
 		return nil, whatsmeow.ErrClientIsNil
+	}
+
+	if data.RemoteJID == nil {
+		return nil, fmt.Errorf("remote_jid is required")
 	}
 
 	resAudio, err := s.getCtx(ctx, data.AudioURL)
@@ -160,6 +168,10 @@ func (s *Whatsmiau) SendDocument(ctx context.Context, data *SendDocumentRequest)
 		return nil, whatsmeow.ErrClientIsNil
 	}
 
+	if data.RemoteJID == nil {
+		return nil, fmt.Errorf("remote_jid is required")
+	}
+
 	resMedia, err := s.getCtx(ctx, data.MediaURL)
 	if err != nil {
 		return nil, err
@@ -219,6 +231,10 @@ func (s *Whatsmiau) SendImage(ctx context.Context, data *SendImageRequest) (*Sen
 	client, ok := s.clients.Load(data.InstanceID)
 	if !ok {
 		return nil, whatsmeow.ErrClientIsNil
+	}
+
+	if data.RemoteJID == nil {
+		return nil, fmt.Errorf("remote_jid is required")
 	}
 
 	resMedia, err := s.getCtx(ctx, data.MediaURL)
@@ -284,6 +300,10 @@ func (s *Whatsmiau) SendReaction(ctx context.Context, data *SendReactionRequest)
 	client, ok := s.clients.Load(data.InstanceID)
 	if !ok {
 		return nil, whatsmeow.ErrClientIsNil
+	}
+
+	if data.RemoteJID == nil {
+		return nil, fmt.Errorf("remote_jid is required")
 	}
 
 	if len(data.Reaction) <= 0 {
