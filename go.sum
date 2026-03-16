@@ -154,8 +154,8 @@ github.com/valyala/fasttemplate v1.2.2 h1:lxLXG0uE3Qnshl9QyaK6XJxMXlQZELvChBOCmQ
 github.com/valyala/fasttemplate v1.2.2/go.mod h1:KHLXt3tVN2HBp8eijSv/kGJopbvo7S+qRAEEKiv+SiQ=
 github.com/vektah/gqlparser/v2 v2.5.27 h1:RHPD3JOplpk5mP5JGX8RKZkt2/Vwj/PZv0HxTdwFp0s=
 github.com/vektah/gqlparser/v2 v2.5.27/go.mod h1:D1/VCZtV3LPnQrcPBeR/q5jkSQIPti0uYCP/RI0gIeo=
-github.com/verbeux-ai/whatsmeow v1.0.3 h1:8Fax2WGWLUPQoPlDNqXPEqQAN/9ggPkh9lTVMKPfYZU=
-github.com/verbeux-ai/whatsmeow v1.0.3/go.mod h1:vlSFm9kVTUyNk+Xudb8S5QUkNKyDZn7i4Fl4YKCG7us=
+github.com/verbeux-ai/whatsmeow v1.0.4 h1:IIIARKy+JWBdJUSrO21ktdTTTD6m2SQNKt1eEO1bMsA=
+github.com/verbeux-ai/whatsmeow v1.0.4/go.mod h1:vlSFm9kVTUyNk+Xudb8S5QUkNKyDZn7i4Fl4YKCG7us=
 github.com/zeebo/errs v1.4.0 h1:XNdoD/RRMKP7HD0UhJnIzUy74ISdGGxURlYG8HSWSfM=
 github.com/zeebo/errs v1.4.0/go.mod h1:sgbWHsvVuTPHcqJJGQ1WhI5KbWlHYz+2+2C/LSEtCw4=
 go.mau.fi/libsignal v0.2.1 h1:vRZG4EzTn70XY6Oh/pVKrQGuMHBkAWlGRC22/85m9L0=

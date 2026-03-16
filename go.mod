@@ -91,4 +91,4 @@ require (
 	google.golang.org/grpc v1.74.2 // indirect
 )
 
-replace go.mau.fi/whatsmeow => github.com/verbeux-ai/whatsmeow v1.0.3
+replace go.mau.fi/whatsmeow => github.com/verbeux-ai/whatsmeow v1.0.4
