@@ -144,14 +144,22 @@ func (s *Whatsmiau) Handle(id string) whatsmeow.EventHandler {
 				return
 			}
 
+			// Handle lifecycle events regardless of webhook enabled state
+			if _, ok := evt.(*events.LoggedOut); ok {
+				s.handleLoggedOut(id)
+				return
+			}
+
+			if instance.Webhook.Enabled != nil && !*instance.Webhook.Enabled {
+				return
+			}
+
 			eventMap := make(map[string]bool)
 			for _, event := range instance.Webhook.Events {
 				eventMap[event] = true
 			}
 
 			switch e := evt.(type) {
-			case *events.LoggedOut:
-				s.handleLoggedOut(id)
 			case *events.Message:
 				s.handleMessageEvent(id, instance, e, eventMap)
 			case *events.Receipt:

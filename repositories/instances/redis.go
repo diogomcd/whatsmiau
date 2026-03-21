@@ -70,6 +70,9 @@ func (s *RedisInstance) Update(ctx context.Context, id string, toUpdate *models.
 	if len(toUpdate.RemoteJID) > 0 {
 		oldInstance.RemoteJID = toUpdate.RemoteJID
 	}
+	if toUpdate.Webhook.Enabled != nil {
+		oldInstance.Webhook.Enabled = toUpdate.Webhook.Enabled
+	}
 	if toUpdate.Webhook.Url != "" {
 		oldInstance.Webhook.Url = toUpdate.Webhook.Url
 	}
