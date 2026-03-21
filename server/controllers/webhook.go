@@ -18,12 +18,14 @@ import (
 type Webhook struct {
 	repo      interfaces.InstanceRepository
 	whatsmiau *whatsmiau.Whatsmiau
+	validate  *validator.Validate
 }
 
 func NewWebhooks(repository interfaces.InstanceRepository, whatsmiau *whatsmiau.Whatsmiau) *Webhook {
 	return &Webhook{
 		repo:      repository,
 		whatsmiau: whatsmiau,
+		validate:  validator.New(),
 	}
 }
 
@@ -33,7 +35,7 @@ func (s *Webhook) Set(ctx echo.Context) error {
 		return utils.HTTPFail(ctx, http.StatusUnprocessableEntity, err, "failed to bind request body")
 	}
 
-	if err := validator.New().Struct(&request); err != nil {
+	if err := s.validate.Struct(&request); err != nil {
 		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid request body")
 	}
 
@@ -68,7 +70,7 @@ func (s *Webhook) Find(ctx echo.Context) error {
 		return utils.HTTPFail(ctx, http.StatusUnprocessableEntity, err, "failed to bind request body")
 	}
 
-	if err := validator.New().Struct(&request); err != nil {
+	if err := s.validate.Struct(&request); err != nil {
 		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid request body")
 	}
 
@@ -80,7 +82,7 @@ func (s *Webhook) Find(ctx echo.Context) error {
 	}
 
 	if len(result) == 0 {
-		return utils.HTTPFail(ctx, http.StatusNotFound, nil, "instance not found")
+		return utils.HTTPFail(ctx, http.StatusNotFound, instances.ErrorNotFound, "instance not found")
 	}
 
 	return ctx.JSON(http.StatusOK, dto.FindWebhookResponse{
