@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"regexp"
 	"time"
@@ -396,6 +398,236 @@ func (s *Message) SendReaction(ctx echo.Context) error {
 		Status:           "sent",
 		MessageType:      "reactionMessage",
 		MessageTimestamp: int(res.CreatedAt.UnixMicro() / 1000),
+		InstanceId:       request.InstanceID,
+	})
+}
+
+// SendList godoc
+// @Summary      Send a list message
+// @Description  Sends an interactive list message with selectable options
+// @Tags         Message
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        instance  path      string              true  "Instance ID"
+// @Param        body      body      dto.SendListRequest  true  "List message parameters"
+// @Success      200       {object}  dto.SendListResponse
+// @Failure      400       {object}  utils.HTTPErrorResponse
+// @Failure      422       {object}  utils.HTTPErrorResponse
+// @Failure      500       {object}  utils.HTTPErrorResponse
+// @Router       /instance/{instance}/message/list [post]
+// @Router       /message/sendList/{instance} [post]
+func (s *Message) SendList(ctx echo.Context) error {
+	var request dto.SendListRequest
+	if err := ctx.Bind(&request); err != nil {
+		return utils.HTTPFail(ctx, http.StatusUnprocessableEntity, err, "failed to bind request body")
+	}
+
+	if err := validator.New().Struct(&request); err != nil {
+		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid request body")
+	}
+
+	jid, err := numberToJid(request.Number)
+	if err != nil {
+		zap.L().Error("error converting number to jid", zap.Error(err))
+		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid number format")
+	}
+
+	// Convert DTO sections to service-layer sections
+	var sections []whatsmiau.SendListSection
+	for _, sec := range request.Sections {
+		var rows []whatsmiau.SendListRow
+		for _, r := range sec.Rows {
+			rows = append(rows, whatsmiau.SendListRow{
+				Title:       r.Title,
+				Description: r.Description,
+				RowId:       r.RowId,
+			})
+		}
+		sections = append(sections, whatsmiau.SendListSection{
+			Title: sec.Title,
+			Rows:  rows,
+		})
+	}
+
+	sendData := &whatsmiau.SendListRequest{
+		InstanceID:  request.InstanceID,
+		RemoteJID:   jid,
+		Title:       request.Title,
+		Description: request.Description,
+		ButtonText:  request.ButtonText,
+		FooterText:  request.FooterText,
+		Sections:    sections,
+	}
+
+	c := ctx.Request().Context()
+	if err := s.whatsmiau.ChatPresence(&whatsmiau.ChatPresenceRequest{
+		InstanceID: request.InstanceID,
+		RemoteJID:  jid,
+		Presence:   types.ChatPresenceComposing,
+	}); err != nil {
+		zap.L().Error("Whatsmiau.ChatPresence", zap.Error(err))
+	} else {
+		time.Sleep(time.Millisecond * time.Duration(request.Delay))
+	}
+
+	res, err := s.whatsmiau.SendList(c, sendData)
+	if err != nil {
+		zap.L().Error("Whatsmiau.SendList failed", zap.Error(err))
+		return utils.HTTPFail(ctx, http.StatusInternalServerError, err, "failed to send list")
+	}
+
+	return ctx.JSON(http.StatusOK, dto.SendListResponse{
+		Key: dto.MessageResponseKey{
+			RemoteJid: request.Number,
+			FromMe:    true,
+			Id:        res.ID,
+		},
+		Status:           "sent",
+		MessageType:      "listMessage",
+		MessageTimestamp: int(res.CreatedAt.Unix() / 1000),
+		InstanceId:       request.InstanceID,
+	})
+}
+
+// SendButtons godoc
+// @Summary      Send a buttons message
+// @Description  Sends an interactive buttons message (reply type) or PIX payment
+// @Tags         Message
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        instance  path      string                  true  "Instance ID"
+// @Param        body      body      dto.SendButtonsRequest   true  "Buttons message parameters"
+// @Success      200       {object}  dto.SendButtonsResponse
+// @Failure      400       {object}  utils.HTTPErrorResponse
+// @Failure      422       {object}  utils.HTTPErrorResponse
+// @Failure      500       {object}  utils.HTTPErrorResponse
+// @Router       /instance/{instance}/message/buttons [post]
+// @Router       /message/sendButtons/{instance} [post]
+func (s *Message) SendButtons(ctx echo.Context) error {
+	var request dto.SendButtonsRequest
+	if err := ctx.Bind(&request); err != nil {
+		return utils.HTTPFail(ctx, http.StatusUnprocessableEntity, err, "failed to bind request body")
+	}
+
+	if err := validator.New().Struct(&request); err != nil {
+		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid request body")
+	}
+
+	jid, err := numberToJid(request.Number)
+	if err != nil {
+		zap.L().Error("error converting number to jid", zap.Error(err))
+		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid number format")
+	}
+
+	// Classify button types (already validated by oneof=reply pix)
+	var hasReply, hasPix bool
+	for _, btn := range request.Buttons {
+		switch btn.Type {
+		case "reply":
+			hasReply = true
+		case "pix":
+			hasPix = true
+		}
+	}
+
+	c := ctx.Request().Context()
+	if err := s.whatsmiau.ChatPresence(&whatsmiau.ChatPresenceRequest{
+		InstanceID: request.InstanceID,
+		RemoteJID:  jid,
+		Presence:   types.ChatPresenceComposing,
+	}); err != nil {
+		zap.L().Error("Whatsmiau.ChatPresence", zap.Error(err))
+	} else {
+		time.Sleep(time.Millisecond * time.Duration(request.Delay))
+	}
+
+	// PIX flow: if any button is pix, use PIX handler
+	if hasPix {
+		return s.sendPixButtons(ctx, c, request, jid)
+	}
+
+	// Reply buttons flow
+	if hasReply {
+		return s.sendReplyButtons(ctx, c, request, jid)
+	}
+
+	return utils.HTTPFail(ctx, http.StatusBadRequest, fmt.Errorf("no valid buttons"), "no valid buttons provided")
+}
+
+func (s *Message) sendReplyButtons(ctx echo.Context, c context.Context, request dto.SendButtonsRequest, jid *types.JID) error {
+	var buttons []whatsmiau.SendButtonItem
+	for _, b := range request.Buttons {
+		buttons = append(buttons, whatsmiau.SendButtonItem{
+			DisplayText: b.DisplayText,
+			Id:          b.Id,
+		})
+	}
+
+	sendData := &whatsmiau.SendButtonsRequestData{
+		InstanceID:  request.InstanceID,
+		RemoteJID:   jid,
+		Title:       request.Title,
+		Description: request.Description,
+		Footer:      request.Footer,
+		Buttons:     buttons,
+	}
+
+	res, err := s.whatsmiau.SendButtons(c, sendData)
+	if err != nil {
+		zap.L().Error("Whatsmiau.SendButtons failed", zap.Error(err))
+		return utils.HTTPFail(ctx, http.StatusInternalServerError, err, "failed to send buttons")
+	}
+
+	return ctx.JSON(http.StatusOK, dto.SendButtonsResponse{
+		Key: dto.MessageResponseKey{
+			RemoteJid: request.Number,
+			FromMe:    true,
+			Id:        res.ID,
+		},
+		Status:           "sent",
+		MessageType:      "buttonsMessage",
+		MessageTimestamp: int(res.CreatedAt.Unix() / 1000),
+		InstanceId:       request.InstanceID,
+	})
+}
+
+func (s *Message) sendPixButtons(ctx echo.Context, c context.Context, request dto.SendButtonsRequest, jid *types.JID) error {
+	// Find the pix button
+	var pixBtn dto.SendButtonsRequestButton
+	for _, b := range request.Buttons {
+		if b.Type == "pix" {
+			pixBtn = b
+			break
+		}
+	}
+
+	sendData := &whatsmiau.SendPixPaymentRequest{
+		InstanceID:   request.InstanceID,
+		RemoteJID:    jid,
+		PixKey:       pixBtn.Key,
+		PixKeyType:   pixBtn.KeyType,
+		MerchantName: pixBtn.Name,
+		DisplayText:  pixBtn.DisplayText,
+		Currency:     pixBtn.Currency,
+	}
+
+	res, err := s.whatsmiau.SendPixPayment(c, sendData)
+	if err != nil {
+		zap.L().Error("Whatsmiau.SendPixPayment failed", zap.Error(err))
+		return utils.HTTPFail(ctx, http.StatusInternalServerError, err, "failed to send pix payment")
+	}
+
+	return ctx.JSON(http.StatusOK, dto.SendButtonsResponse{
+		Key: dto.MessageResponseKey{
+			RemoteJid: request.Number,
+			FromMe:    true,
+			Id:        res.ID,
+		},
+		Status:           "sent",
+		MessageType:      "buttonsMessage",
+		MessageTimestamp: int(res.CreatedAt.Unix() / 1000),
 		InstanceId:       request.InstanceID,
 	})
 }
