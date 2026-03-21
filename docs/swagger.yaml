@@ -337,6 +337,65 @@ definitions:
       waveform:
         type: string
     type: object
+  dto.SendButtonsRequest:
+    properties:
+      buttons:
+        items:
+          $ref: '#/definitions/dto.SendButtonsRequestButton'
+        maxItems: 3
+        minItems: 1
+        type: array
+      delay:
+        maximum: 300000
+        minimum: 0
+        type: integer
+      description:
+        type: string
+      footer:
+        type: string
+      number:
+        type: string
+      title:
+        type: string
+    required:
+    - buttons
+    - description
+    - number
+    type: object
+  dto.SendButtonsRequestButton:
+    properties:
+      currency:
+        description: PIX fields
+        type: string
+      displayText:
+        type: string
+      id:
+        type: string
+      key:
+        type: string
+      keyType:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    required:
+    - displayText
+    - type
+    type: object
+  dto.SendButtonsResponse:
+    properties:
+      instanceId:
+        type: string
+      key:
+        $ref: '#/definitions/dto.MessageResponseKey'
+      messageTimestamp:
+        type: integer
+      messageType:
+        type: string
+      status:
+        type: string
+    type: object
   dto.SendChatPresenceRequest:
     properties:
       delay:
@@ -399,6 +458,69 @@ definitions:
   dto.SendDocumentResponseData:
     properties:
       base64:
+        type: string
+    type: object
+  dto.SendListRequest:
+    properties:
+      buttonText:
+        type: string
+      delay:
+        maximum: 300000
+        minimum: 0
+        type: integer
+      description:
+        type: string
+      footerText:
+        type: string
+      number:
+        type: string
+      sections:
+        items:
+          $ref: '#/definitions/dto.SendListRequestSection'
+        minItems: 1
+        type: array
+      title:
+        type: string
+    required:
+    - description
+    - number
+    - sections
+    type: object
+  dto.SendListRequestRow:
+    properties:
+      description:
+        type: string
+      rowId:
+        type: string
+      title:
+        type: string
+    required:
+    - rowId
+    - title
+    type: object
+  dto.SendListRequestSection:
+    properties:
+      rows:
+        items:
+          $ref: '#/definitions/dto.SendListRequestRow'
+        minItems: 1
+        type: array
+      title:
+        type: string
+    required:
+    - rows
+    type: object
+  dto.SendListResponse:
+    properties:
+      instanceId:
+        type: string
+      key:
+        $ref: '#/definitions/dto.MessageResponseKey'
+      messageTimestamp:
+        type: integer
+      messageType:
+        type: string
+      status:
         type: string
     type: object
   dto.SendMediaRequest:
@@ -621,6 +743,8 @@ definitions:
       base64:
         type: boolean
       byEvents:
+        type: boolean
+      enabled:
         type: boolean
       events:
         items:
@@ -1126,6 +1250,47 @@ paths:
       summary: Send an audio message
       tags:
       - Message
+  /instance/{instance}/message/buttons:
+    post:
+      consumes:
+      - application/json
+      description: Sends an interactive buttons message (reply type) or PIX payment
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Buttons message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendButtonsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendButtonsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a buttons message
+      tags:
+      - Message
   /instance/{instance}/message/document:
     post:
       consumes:
@@ -1206,6 +1371,47 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Send an image
+      tags:
+      - Message
+  /instance/{instance}/message/list:
+    post:
+      consumes:
+      - application/json
+      description: Sends an interactive list message with selectable options
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: List message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a list message
       tags:
       - Message
   /instance/{instance}/message/text:
@@ -1531,6 +1737,88 @@ paths:
       summary: Update an existing instance
       tags:
       - Instance
+  /message/sendButtons/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Sends an interactive buttons message (reply type) or PIX payment
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Buttons message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendButtonsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendButtonsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a buttons message
+      tags:
+      - Message
+  /message/sendList/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Sends an interactive list message with selectable options
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: List message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a list message
+      tags:
+      - Message
   /message/sendMedia/{instance}:
     post:
       consumes:
