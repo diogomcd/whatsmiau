@@ -173,5 +173,11 @@ The application can send webhook events for the following actions:
 | `CONTACTS_UPSERT` | Triggered when a contact is created or updated.     |
 
 
+## Contributors
+
+<a href="https://github.com/verbeux-ai/whatsmiau/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=verbeux-ai/whatsmiau" />
+</a>
+
 ## Did you like project?
 Donate: https://buy.stripe.com/8x28wI5vKfPbe9b8ih1VK0f
