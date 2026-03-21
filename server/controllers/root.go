@@ -9,6 +9,14 @@ import (
 	"go.mau.fi/whatsmeow"
 )
 
+// Root godoc
+// @Summary      API health check and info
+// @Description  Returns API status, version, and WhatsApp Web client version
+// @Tags         Root
+// @Produce      json
+// @Success      200  {object}  dto.RootResponse
+// @Failure      400  {object}  utils.HTTPErrorResponse
+// @Router       / [get]
 func Root(ctx echo.Context) error {
 	res, err := whatsmeow.GetLatestVersion(ctx.Request().Context(), &http.Client{Timeout: 5 * time.Second})
 	if err != nil {

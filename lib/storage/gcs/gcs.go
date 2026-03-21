@@ -45,7 +45,15 @@ func New(bucket string) (*Gcs, error) {
 
 }
 
-func (s *Gcs) UploadBase64(ctx context.Context, fileName, mimetype, b64 string) (string, error) {
+func (s *Gcs) UploadBase64IfDontExists(ctx context.Context, fileName, mimetype, b64 string) (string, error) {
+	if obj, err := s.googleBucket.Object(fileName).Attrs(ctx); err != nil && obj != nil {
+		return fmt.Sprintf("%s/%s/%s",
+			env.Env.GCSURL,
+			obj.Bucket,
+			fileName,
+		), nil
+	}
+
 	file, newFileName, err := base64ToReader(b64, mimetype, fileName)
 	if err != nil {
 		return "", err

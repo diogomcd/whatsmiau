@@ -70,6 +70,9 @@ func (s *RedisInstance) Update(ctx context.Context, id string, toUpdate *models.
 	if len(toUpdate.RemoteJID) > 0 {
 		oldInstance.RemoteJID = toUpdate.RemoteJID
 	}
+	if toUpdate.Webhook.Enabled != nil {
+		oldInstance.Webhook.Enabled = toUpdate.Webhook.Enabled
+	}
 	if toUpdate.Webhook.Url != "" {
 		oldInstance.Webhook.Url = toUpdate.Webhook.Url
 	}
@@ -87,8 +90,27 @@ func (s *RedisInstance) Update(ctx context.Context, id string, toUpdate *models.
 			oldInstance.Webhook.Headers[k] = v
 		}
 	}
-	if toUpdate.Webhook.Events != nil && len(toUpdate.Webhook.Events) > 0 {
+	if toUpdate.Webhook.Events != nil {
 		oldInstance.Webhook.Events = toUpdate.Webhook.Events
+	}
+
+	if toUpdate.ProxyHost != "" {
+		oldInstance.InstanceProxy = toUpdate.InstanceProxy
+	}
+
+	if toUpdate.ProxyHost == "" {
+		if toUpdate.ProxyPort != "" {
+			oldInstance.ProxyPort = toUpdate.ProxyPort
+		}
+		if toUpdate.ProxyProtocol != "" {
+			oldInstance.ProxyProtocol = toUpdate.ProxyProtocol
+		}
+		if toUpdate.ProxyUsername != "" {
+			oldInstance.ProxyUsername = toUpdate.ProxyUsername
+		}
+		if toUpdate.ProxyPassword != "" {
+			oldInstance.ProxyPassword = toUpdate.ProxyPassword
+		}
 	}
 
 	data, err := json.Marshal(oldInstance)

@@ -1,7 +1,7 @@
 package dto
 
 type ReadMessagesRequest struct {
-	InstanceID   string                    `param:"instance" validate:"required"`
+	InstanceID   string                    `param:"instance" validate:"required" swaggerignore:"true"`
 	ReadMessages []ReadMessagesRequestItem `json:"readMessages" validate:"required,min=1"`
 }
 type ReadMessagesRequestItem struct {
@@ -26,7 +26,7 @@ const (
 )
 
 type SendChatPresenceRequest struct {
-	InstanceID string                      `param:"instance" validate:"required"`
+	InstanceID string                      `param:"instance" validate:"required" swaggerignore:"true"`
 	Number     string                      `json:"number"`
 	Delay      int                         `json:"delay,omitempty" validate:"omitempty,min=0,max=300000"`
 	Presence   SendPresenceRequestPresence `json:"presence"`

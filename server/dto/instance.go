@@ -13,12 +13,13 @@ type CreateInstanceResponse struct {
 }
 
 type UpdateInstanceRequest struct {
-	ID      string `json:"id,omitempty" param:"id" validate:"required"`
+	ID      string `json:"id,omitempty" param:"id" validate:"required" swaggerignore:"true"`
 	Webhook struct {
 		Base64 bool     `json:"base64,omitempty"`
 		URL    string   `json:"url,omitempty"`
 		Events []string `json:"events,omitempty"`
 	} `json:"webhook,omitempty"`
+	models.InstanceProxy
 }
 
 type UpdateInstanceResponse struct {
@@ -38,7 +39,7 @@ type ListInstancesResponse struct {
 }
 
 type ConnectInstanceRequest struct {
-	ID string `param:"id" validate:"required"`
+	ID string `param:"id" validate:"required" swaggerignore:"true"`
 }
 
 type ConnectInstanceResponse struct {
@@ -49,7 +50,7 @@ type ConnectInstanceResponse struct {
 }
 
 type StatusInstanceRequest struct {
-	ID string `param:"id" validate:"required"`
+	ID string `param:"id" validate:"required" swaggerignore:"true"`
 }
 
 type StatusInstanceResponse struct {
@@ -64,7 +65,7 @@ type StatusInstanceResponseEvolutionCompatibility struct {
 }
 
 type DeleteInstanceRequest struct {
-	ID string `param:"id" validate:"required"`
+	ID string `param:"id" validate:"required" swaggerignore:"true"`
 }
 
 type DeleteInstanceResponse struct {
@@ -72,7 +73,7 @@ type DeleteInstanceResponse struct {
 }
 
 type LogoutInstanceRequest struct {
-	ID string `param:"id" validate:"required"`
+	ID string `param:"id" validate:"required" swaggerignore:"true"`
 }
 
 type LogoutInstanceResponse struct {

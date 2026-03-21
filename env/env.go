@@ -28,6 +28,7 @@ type E struct {
 
 	EmitterBufferSize    int `env:"EMITTER_BUFFER_SIZE" envDefault:"2048"`
 	HandlerSemaphoreSize int `env:"HANDLER_SEMAPHORE_SIZE" envDefault:"512"`
+	EmitterWorkers       int `env:"EMITTER_WORKERS" envDefault:"50"`
 
 	ProxyAddresses []string `env:"PROXY_ADDRESSES" envDefault:""`      // random choices proxies ex: <SOCKS5|HTTP|HTTPS>://<username>:<password>@<host>:<port>
 	ProxyStrategy  string   `env:"PROXY_STRATEGY" envDefault:"RANDOM"` // todo: implement BALANCED

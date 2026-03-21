@@ -27,7 +27,7 @@ type Whatsmiau struct {
 	logger           waLog.Logger
 	repo             interfaces.InstanceRepository
 	qrCache          *xsync.Map[string, string]
-	observerRunning  *xsync.Map[string, bool]
+	observerRunning  *xsync.Map[string, *whatsmeow.Client]
 	instanceCache    *xsync.Map[string, models.Instance]
 	lockConnection   *xsync.Map[string, *sync.Mutex]
 	emitter          chan emitter
@@ -118,7 +118,7 @@ func LoadMiau(ctx context.Context, container *sqlstore.Container) {
 		repo:            repo,
 		qrCache:         xsync.NewMap[string, string](),
 		instanceCache:   xsync.NewMap[string, models.Instance](),
-		observerRunning: xsync.NewMap[string, bool](),
+		observerRunning: xsync.NewMap[string, *whatsmeow.Client](),
 		lockConnection:  xsync.NewMap[string, *sync.Mutex](),
 		emitter:         make(chan emitter, env.Env.EmitterBufferSize),
 		httpClient: &http.Client{
@@ -185,10 +185,15 @@ func (s *Whatsmiau) generateClient(ctx context.Context, id string) (*whatsmeow.C
 			return nil, nil
 		}
 
-		if err := client.Connect(); err == nil {
+		if err := client.Connect(); err != nil {
 			if client.IsLoggedIn() {
 				return nil, nil
 			}
+			return nil, err
+		}
+
+		if client.IsLoggedIn() {
+			return nil, nil
 		}
 
 		s.clients.Delete(id)
@@ -220,28 +225,29 @@ func (s *Whatsmiau) hasSomeDevice(client *whatsmeow.Client) bool {
 }
 
 func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
-	if _, ok := s.observerRunning.Load(id); ok {
-		zap.L().Debug("observer connection already running", zap.String("id", id))
-		return
+	existingClient, loaded := s.observerRunning.LoadOrStore(id, client)
+	if loaded {
+		if existingClient == client {
+			zap.L().Debug("observer connection already running for this client", zap.String("id", id))
+			return
+		}
+		zap.L().Warn("replacing stale observer connection", zap.String("id", id))
+		s.observerRunning.Store(id, client)
 	}
 
 	zap.L().Debug("starting observer connection", zap.String("id", id))
-	s.observerRunning.Store(id, true)
 	defer func() {
 		zap.L().Debug("stopping observer connection", zap.String("id", id))
-		s.observerRunning.Delete(id)
-		s.qrCache.Delete(id)
-		s.lockConnection.Delete(id)
+		if currentClient, ok := s.observerRunning.Load(id); ok && currentClient == client {
+			s.observerRunning.Delete(id)
+			s.qrCache.Delete(id)
+		}
 	}()
 
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Minute*2)
 	qrChan, err := client.GetQRChannel(ctx)
 	if err != nil {
 		zap.L().Error("failed to observe QR Code", zap.Error(err))
-		s.clients.Delete(id)
-		if err := s.deleteDeviceIfExists(context.TODO(), client); err != nil {
-			zap.L().Error("failed to cleanup device after GetQRChannel error", zap.String("id", id), zap.Error(err))
-		}
 		return
 	}
 
@@ -250,10 +256,6 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
 	}
 	if err := client.Connect(); err != nil {
 		zap.L().Error("failed to connect connected device", zap.Error(err))
-		s.clients.Delete(id)
-		if err := s.deleteDeviceIfExists(context.TODO(), client); err != nil {
-			zap.L().Error("failed to cleanup device after Connect error", zap.String("id", id), zap.Error(err))
-		}
 		return
 	}
 
@@ -402,7 +404,7 @@ func (s *Whatsmiau) GetJidLid(ctx context.Context, id string, jid types.JID) (st
 
 func (s *Whatsmiau) extractJidLid(ctx context.Context, id string, jid types.JID) (string, string) {
 	client, ok := s.clients.Load(id)
-	if !ok {
+	if !ok || client == nil || client.Store == nil || client.Store.LIDs == nil {
 		return jid.ToNonAD().String(), ""
 	}
 

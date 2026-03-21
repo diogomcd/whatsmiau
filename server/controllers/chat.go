@@ -26,6 +26,21 @@ func NewChats(repository interfaces.InstanceRepository, whatsmiau *whatsmiau.Wha
 	}
 }
 
+// ReadMessages godoc
+// @Summary      Mark messages as read
+// @Description  Marks one or more messages as read in a WhatsApp conversation
+// @Tags         Chat
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        instance  path      string                   true  "Instance ID"
+// @Param        body      body      dto.ReadMessagesRequest   true  "Messages to mark as read"
+// @Success      200       {object}  map[string]interface{}   "Empty object on success"
+// @Failure      400       {object}  utils.HTTPErrorResponse
+// @Failure      422       {object}  utils.HTTPErrorResponse
+// @Failure      500       {object}  utils.HTTPErrorResponse
+// @Router       /instance/{instance}/chat/read-messages [post]
+// @Router       /chat/markMessageAsRead/{instance} [post]
 func (s *Chat) ReadMessages(ctx echo.Context) error {
 	var request dto.ReadMessagesRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -61,6 +76,21 @@ func (s *Chat) ReadMessages(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, map[string]interface{}{})
 }
 
+// SendChatPresence godoc
+// @Summary      Send chat presence (typing indicator)
+// @Description  Sends a presence status (composing/available) to a WhatsApp contact, with optional auto-stop delay
+// @Tags         Chat
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        instance  path      string                       true  "Instance ID"
+// @Param        body      body      dto.SendChatPresenceRequest  true  "Presence parameters"
+// @Success      200       {object}  map[string]interface{}       "Empty object on success"
+// @Failure      400       {object}  utils.HTTPErrorResponse
+// @Failure      422       {object}  utils.HTTPErrorResponse
+// @Failure      500       {object}  utils.HTTPErrorResponse
+// @Router       /instance/{instance}/chat/presence [post]
+// @Router       /chat/sendPresence/{instance} [post]
 func (s *Chat) SendChatPresence(ctx echo.Context) error {
 	var request dto.SendChatPresenceRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -117,6 +147,20 @@ func (s *Chat) SendChatPresence(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, map[string]interface{}{})
 }
 
+// NumberExists godoc
+// @Summary      Check if numbers exist on WhatsApp
+// @Description  Checks whether the given phone numbers are registered on WhatsApp
+// @Tags         Chat
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        instance  path      string                    true  "Instance ID"
+// @Param        body      body      dto.NumberExistsRequest    true  "Numbers to check"
+// @Success      200       {array}   object                    "List of number existence results"
+// @Failure      400       {object}  utils.HTTPErrorResponse
+// @Failure      422       {object}  utils.HTTPErrorResponse
+// @Failure      500       {object}  utils.HTTPErrorResponse
+// @Router       /chat/whatsappNumbers/{instance} [post]
 func (s *Chat) NumberExists(ctx echo.Context) error {
 	instanceID := ctx.Param("instance")
 	if instanceID == "" {

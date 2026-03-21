@@ -150,43 +150,17 @@ curl -X POST 'http://localhost:8080/v1/message/sendText/my-instance' \
 -d ".{\"number\": \"1234567890\",\"textMessage\": {\"text\": \"Hello from WhatsMiau!\"}}"
 ```
 
-## API Routes
+## API Documentation
 
-Same Pattern: https://www.postman.com/agenciadgcode/evolution-api/overview
-| Method | Path                                      | Description                 |
-|--------|-------------------------------------------|-----------------------------|
-| POST   | /v1/instance                            | Create a new instance       |
-| GET    | /v1/instance                            | List all instances          |
-| POST   | /v1/instance/:id/connect                | Connect to an instance      |
-| POST   | /v1/instance/:id/logout                 | Logout from an instance     |
-| DELETE | /v1/instance/:id                        | Delete an instance          |
-| GET    | /v1/instance/:id/status                 | Get instance status         |
-| POST   | /v1/instance/:instance/message/text     | Send a text message         |
-| POST   | /v1/instance/:instance/message/audio    | Send an audio message       |
-| POST   | /v1/instance/:instance/message/document | Send a document             |
-| POST   | /v1/instance/:instance/message/image    | Send an image message       |
-| POST   | /v1/instance/:instance/chat/presence    | Send chat presence          |
-| POST   | /v1/instance/:instance/chat/read-messages| Mark messages as read       |
-| POST   | /v1/instance/:instance/chat/whatsapp-numbers| Check if a number is on WhatsApp |
+The API is fully documented using Swagger/OpenAPI. Once the server is running, you can access the interactive documentation at:
 
-### Evolution API Compatibility Routes
+```
+http://localhost:8080/swagger/index.html
+```
 
-| Method | Path                               | Description                 |
-|--- |--- |--- |
-| POST   | /v1/instance/create                | Create a new instance       |
-| GET    | /v1/instance/fetchInstances        | List all instances          |
-| GET    | /v1/instance/connect/:id           | Connect to an instance      |
-| GET    | /v1/instance/connectionState/:id   | Get instance status         |
-| DELETE | /v1/instance/logout/:id            | Logout from an instance     |
-| DELETE | /v1/instance/delete/:id            | Delete an instance          |
-| PUT    | /v1/instance/update/:id            | Update an instance          |
-| POST   | /v1/message/sendText/:instance     | Send a text message         |
-| POST   | /v1/message/sendWhatsAppAudio/:instance | Send an audio message       |
-| POST   | /v1/message/sendMedia/:instance    | Send a media message        |
-| POST   | /v1/message/sendReaction/:instance | Send a reaction to a message |
-| POST   | /v1/chat/markMessageAsRead/:instance | Mark messages as read       |
-| POST   | /v1/chat/sendPresence/:instance    | Send chat presence          |
-| POST   | /v1/chat/whatsappNumbers/:instance | Check if a number is on WhatsApp |
+No API key is required to access the documentation page.
+
+The Swagger UI allows you to explore all available routes, view request/response schemas, and test the API directly from your browser.
 
 ## Supported Events
 
@@ -198,6 +172,12 @@ The application can send webhook events for the following actions:
 | `MESSAGES_UPDATE` | Triggered when a message status changes (e.g., read). |
 | `CONTACTS_UPSERT` | Triggered when a contact is created or updated.     |
 
+
+## Contributors
+
+<a href="https://github.com/verbeux-ai/whatsmiau/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=verbeux-ai/whatsmiau" />
+</a>
 
 ## Did you like project?
 Donate: https://buy.stripe.com/8x28wI5vKfPbe9b8ih1VK0f

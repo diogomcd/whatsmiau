@@ -1,0 +1,1993 @@
+basePath: /v1
+definitions:
+  dto.ConnectInstanceResponse:
+    properties:
+      alwaysOnline:
+        type: boolean
+      base64:
+        type: string
+      connected:
+        type: boolean
+      groupsIgnore:
+        type: boolean
+      id:
+        type: string
+      message:
+        type: string
+      msgCall:
+        type: string
+      proxyHost:
+        type: string
+      proxyPassword:
+        type: string
+      proxyPort:
+        type: string
+      proxyProtocol:
+        type: string
+      proxyUsername:
+        type: string
+      readMessages:
+        type: boolean
+      readStatus:
+        type: boolean
+      rejectCall:
+        type: boolean
+      remoteJID:
+        type: string
+      syncFullHistory:
+        type: boolean
+      syncRecentHistory:
+        type: boolean
+      webhook:
+        $ref: '#/definitions/models.InstanceWebhook'
+    type: object
+  dto.ContextInfoQuotedMessage:
+    properties:
+      conversation:
+        type: string
+    type: object
+  dto.CreateInstanceRequest:
+    properties:
+      alwaysOnline:
+        type: boolean
+      groupsIgnore:
+        type: boolean
+      id:
+        type: string
+      instanceName:
+        type: string
+      msgCall:
+        type: string
+      proxyHost:
+        type: string
+      proxyPassword:
+        type: string
+      proxyPort:
+        type: string
+      proxyProtocol:
+        type: string
+      proxyUsername:
+        type: string
+      readMessages:
+        type: boolean
+      readStatus:
+        type: boolean
+      rejectCall:
+        type: boolean
+      remoteJID:
+        type: string
+      syncFullHistory:
+        type: boolean
+      syncRecentHistory:
+        type: boolean
+      webhook:
+        $ref: '#/definitions/models.InstanceWebhook'
+    type: object
+  dto.CreateInstanceResponse:
+    properties:
+      alwaysOnline:
+        type: boolean
+      groupsIgnore:
+        type: boolean
+      id:
+        type: string
+      msgCall:
+        type: string
+      proxyHost:
+        type: string
+      proxyPassword:
+        type: string
+      proxyPort:
+        type: string
+      proxyProtocol:
+        type: string
+      proxyUsername:
+        type: string
+      readMessages:
+        type: boolean
+      readStatus:
+        type: boolean
+      rejectCall:
+        type: boolean
+      remoteJID:
+        type: string
+      syncFullHistory:
+        type: boolean
+      syncRecentHistory:
+        type: boolean
+      webhook:
+        $ref: '#/definitions/models.InstanceWebhook'
+    type: object
+  dto.DeleteInstanceResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dto.DeviceListMetadata:
+    properties:
+      recipientKeyHash:
+        type: string
+      recipientTimestamp:
+        type: string
+      senderKeyHash:
+        type: string
+      senderTimestamp:
+        type: string
+    type: object
+  dto.ListInstancesResponse:
+    properties:
+      alwaysOnline:
+        type: boolean
+      groupsIgnore:
+        type: boolean
+      id:
+        type: string
+      instanceName:
+        type: string
+      msgCall:
+        type: string
+      ownerJid:
+        type: string
+      proxyHost:
+        type: string
+      proxyPassword:
+        type: string
+      proxyPort:
+        type: string
+      proxyProtocol:
+        type: string
+      proxyUsername:
+        type: string
+      readMessages:
+        type: boolean
+      readStatus:
+        type: boolean
+      rejectCall:
+        type: boolean
+      remoteJID:
+        type: string
+      syncFullHistory:
+        type: boolean
+      syncRecentHistory:
+        type: boolean
+      webhook:
+        $ref: '#/definitions/models.InstanceWebhook'
+    type: object
+  dto.MessageContextInfo:
+    properties:
+      deviceListMetadata:
+        $ref: '#/definitions/dto.DeviceListMetadata'
+      deviceListMetadataVersion:
+        type: integer
+      messageSecret:
+        type: string
+    type: object
+  dto.MessageRequestQuoted:
+    properties:
+      key:
+        $ref: '#/definitions/dto.QuotedKey'
+      message:
+        $ref: '#/definitions/dto.QuotedMessage'
+    type: object
+  dto.MessageResponseKey:
+    properties:
+      fromMe:
+        type: boolean
+      id:
+        type: string
+      remoteJid:
+        type: string
+    type: object
+  dto.NumberExistsRequest:
+    properties:
+      numbers:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - numbers
+    type: object
+  dto.QuotedKey:
+    properties:
+      id:
+        type: string
+    type: object
+  dto.QuotedMessage:
+    properties:
+      conversation:
+        type: string
+    type: object
+  dto.ReadMessagesRequest:
+    properties:
+      readMessages:
+        items:
+          $ref: '#/definitions/dto.ReadMessagesRequestItem'
+        minItems: 1
+        type: array
+    required:
+    - readMessages
+    type: object
+  dto.ReadMessagesRequestItem:
+    properties:
+      id:
+        type: string
+      remoteJid:
+        type: string
+      sender:
+        description: FromMe    bool   `json:"fromMe"` ignored
+        type: string
+    required:
+    - id
+    - remoteJid
+    type: object
+  dto.RootResponse:
+    properties:
+      clientName:
+        example: whatsmiau
+        type: string
+      documentation:
+        example: https://doc.evolution-api.com
+        type: string
+      message:
+        example: Welcome to the Whatsmiau API, a Evolution API alternative, it is
+          working!
+        type: string
+      status:
+        example: 200
+        type: integer
+      version:
+        example: 0.3.2
+        type: string
+      whatsappWebVersion:
+        example: 2.3000.0
+        type: string
+    type: object
+  dto.SendAudioRequest:
+    properties:
+      audio:
+        type: string
+      delay:
+        maximum: 300000
+        minimum: 0
+        type: integer
+      encoding:
+        type: boolean
+      mentioned:
+        items:
+          type: string
+        type: array
+      mentionsEveryOne:
+        type: boolean
+      number:
+        type: string
+      quoted:
+        $ref: '#/definitions/dto.MessageRequestQuoted'
+    type: object
+  dto.SendAudioResponse:
+    properties:
+      contextInfo:
+        $ref: '#/definitions/dto.MessageContextInfo'
+      instanceId:
+        type: string
+      key:
+        $ref: '#/definitions/dto.MessageResponseKey'
+      message:
+        $ref: '#/definitions/dto.SendAudioResponseMessage'
+      messageTimestamp:
+        type: integer
+      messageType:
+        type: string
+      pushName:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.SendAudioResponseMessage:
+    properties:
+      audioMessage:
+        $ref: '#/definitions/dto.SendAudioResponseMessageAudio'
+      base64:
+        type: string
+    type: object
+  dto.SendAudioResponseMessageAudio:
+    properties:
+      directPath:
+        type: string
+      fileEncSha256:
+        type: string
+      fileLength:
+        type: string
+      fileSha256:
+        type: string
+      mediaKey:
+        type: string
+      mediaKeyTimestamp:
+        type: string
+      mimetype:
+        type: string
+      ptt:
+        type: boolean
+      seconds:
+        type: integer
+      url:
+        type: string
+      waveform:
+        type: string
+    type: object
+  dto.SendButtonsRequest:
+    properties:
+      buttons:
+        items:
+          $ref: '#/definitions/dto.SendButtonsRequestButton'
+        maxItems: 3
+        minItems: 1
+        type: array
+      delay:
+        maximum: 300000
+        minimum: 0
+        type: integer
+      description:
+        type: string
+      footer:
+        type: string
+      number:
+        type: string
+      title:
+        type: string
+    required:
+    - buttons
+    - description
+    - number
+    type: object
+  dto.SendButtonsRequestButton:
+    properties:
+      currency:
+        description: PIX fields
+        type: string
+      displayText:
+        type: string
+      id:
+        type: string
+      key:
+        type: string
+      keyType:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    required:
+    - displayText
+    - type
+    type: object
+  dto.SendButtonsResponse:
+    properties:
+      instanceId:
+        type: string
+      key:
+        $ref: '#/definitions/dto.MessageResponseKey'
+      messageTimestamp:
+        type: integer
+      messageType:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.SendChatPresenceRequest:
+    properties:
+      delay:
+        maximum: 300000
+        minimum: 0
+        type: integer
+      number:
+        type: string
+      presence:
+        $ref: '#/definitions/dto.SendPresenceRequestPresence'
+      type:
+        $ref: '#/definitions/dto.SendPresenceRequestType'
+    type: object
+  dto.SendDocumentRequest:
+    properties:
+      caption:
+        type: string
+      delay:
+        maximum: 300000
+        minimum: 0
+        type: integer
+      fileName:
+        type: string
+      media:
+        description: Media is the URL of the file
+        type: string
+      mentioned:
+        items:
+          type: string
+        type: array
+      mentionsEveryOne:
+        type: boolean
+      mimetype:
+        type: string
+      number:
+        type: string
+      quoted:
+        $ref: '#/definitions/dto.MessageRequestQuoted'
+    type: object
+  dto.SendDocumentResponse:
+    properties:
+      contextInfo: {}
+      instanceId:
+        type: string
+      key:
+        $ref: '#/definitions/dto.MessageResponseKey'
+      message:
+        $ref: '#/definitions/dto.SendDocumentResponseData'
+      messageTimestamp:
+        type: integer
+      messageType:
+        type: string
+      pushName:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.SendDocumentResponseData:
+    properties:
+      base64:
+        type: string
+    type: object
+  dto.SendListRequest:
+    properties:
+      buttonText:
+        type: string
+      delay:
+        maximum: 300000
+        minimum: 0
+        type: integer
+      description:
+        type: string
+      footerText:
+        type: string
+      number:
+        type: string
+      sections:
+        items:
+          $ref: '#/definitions/dto.SendListRequestSection'
+        minItems: 1
+        type: array
+      title:
+        type: string
+    required:
+    - description
+    - number
+    - sections
+    type: object
+  dto.SendListRequestRow:
+    properties:
+      description:
+        type: string
+      rowId:
+        type: string
+      title:
+        type: string
+    required:
+    - rowId
+    - title
+    type: object
+  dto.SendListRequestSection:
+    properties:
+      rows:
+        items:
+          $ref: '#/definitions/dto.SendListRequestRow'
+        minItems: 1
+        type: array
+      title:
+        type: string
+    required:
+    - rows
+    type: object
+  dto.SendListResponse:
+    properties:
+      instanceId:
+        type: string
+      key:
+        $ref: '#/definitions/dto.MessageResponseKey'
+      messageTimestamp:
+        type: integer
+      messageType:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.SendMediaRequest:
+    properties:
+      caption:
+        type: string
+      delay:
+        maximum: 300000
+        minimum: 0
+        type: integer
+      fileName:
+        type: string
+      media:
+        description: Media is the URL of the file
+        type: string
+      mediatype:
+        type: string
+      mentioned:
+        items:
+          type: string
+        type: array
+      mentionsEveryOne:
+        type: boolean
+      mimetype:
+        type: string
+      number:
+        type: string
+      quoted:
+        $ref: '#/definitions/dto.MessageRequestQuoted'
+    type: object
+  dto.SendPresenceRequestPresence:
+    enum:
+    - composing
+    - available
+    type: string
+    x-enum-varnames:
+    - PresenceComposing
+    - PresenceAvailable
+  dto.SendPresenceRequestType:
+    enum:
+    - text
+    - audio
+    type: string
+    x-enum-varnames:
+    - PresenceTypeText
+    - PresenceTypeAudio
+  dto.SendReactionRequest:
+    properties:
+      key:
+        properties:
+          fromMe:
+            type: boolean
+          id:
+            type: string
+          remoteJid:
+            type: string
+        required:
+        - fromMe
+        - id
+        - remoteJid
+        type: object
+      reaction:
+        type: string
+    required:
+    - reaction
+    type: object
+  dto.SendReactionResponse:
+    properties:
+      contextInfo: {}
+      instanceId:
+        type: string
+      key:
+        $ref: '#/definitions/dto.MessageResponseKey'
+      messageTimestamp:
+        type: integer
+      messageType:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.SendTextRequest:
+    properties:
+      delay:
+        maximum: 300000
+        minimum: 0
+        type: integer
+      linkPreview:
+        type: boolean
+      mentioned:
+        items:
+          type: string
+        type: array
+      mentionsEveryOne:
+        type: boolean
+      number:
+        description: JID
+        type: string
+      quoted:
+        $ref: '#/definitions/dto.MessageRequestQuoted'
+      text:
+        type: string
+    required:
+    - number
+    - text
+    type: object
+  dto.SendTextResponse:
+    properties:
+      contextInfo:
+        $ref: '#/definitions/dto.SendTextResponseContextInfo'
+      instanceId:
+        type: string
+      key:
+        $ref: '#/definitions/dto.MessageResponseKey'
+      message:
+        $ref: '#/definitions/dto.SendTextResponseMessage'
+      messageTimestamp:
+        type: integer
+      messageType:
+        type: string
+      pushName:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.SendTextResponseContextInfo:
+    properties:
+      participant:
+        type: string
+      quotedMessage:
+        $ref: '#/definitions/dto.ContextInfoQuotedMessage'
+      stanzaId:
+        type: string
+    type: object
+  dto.SendTextResponseMessage:
+    properties:
+      conversation:
+        type: string
+    type: object
+  dto.StatusInstanceResponse:
+    properties:
+      id:
+        type: string
+      instance:
+        $ref: '#/definitions/dto.StatusInstanceResponseEvolutionCompatibility'
+      state:
+        type: string
+    type: object
+  dto.StatusInstanceResponseEvolutionCompatibility:
+    properties:
+      instanceName:
+        type: string
+      state:
+        type: string
+    type: object
+  dto.UpdateInstanceRequest:
+    properties:
+      proxyHost:
+        type: string
+      proxyPassword:
+        type: string
+      proxyPort:
+        type: string
+      proxyProtocol:
+        type: string
+      proxyUsername:
+        type: string
+      webhook:
+        properties:
+          base64:
+            type: boolean
+          events:
+            items:
+              type: string
+            type: array
+          url:
+            type: string
+        type: object
+    type: object
+  dto.UpdateInstanceResponse:
+    properties:
+      alwaysOnline:
+        type: boolean
+      groupsIgnore:
+        type: boolean
+      id:
+        type: string
+      msgCall:
+        type: string
+      proxyHost:
+        type: string
+      proxyPassword:
+        type: string
+      proxyPort:
+        type: string
+      proxyProtocol:
+        type: string
+      proxyUsername:
+        type: string
+      readMessages:
+        type: boolean
+      readStatus:
+        type: boolean
+      rejectCall:
+        type: boolean
+      remoteJID:
+        type: string
+      syncFullHistory:
+        type: boolean
+      syncRecentHistory:
+        type: boolean
+      webhook:
+        $ref: '#/definitions/models.InstanceWebhook'
+    type: object
+  models.InstanceWebhook:
+    properties:
+      base64:
+        type: boolean
+      byEvents:
+        type: boolean
+      enabled:
+        type: boolean
+      events:
+        items:
+          type: string
+        type: array
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      url:
+        type: string
+    type: object
+  utils.HTTPErrorResponse:
+    properties:
+      error:
+        type: string
+      errorMessage:
+        type: string
+      message:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: Verbeux AI
+    url: https://github.com/verbeux-ai/whatsmiau
+  description: WhatsMiau - WhatsApp API compatible with Evolution API. Provides instance
+    management, messaging, and chat operations over WhatsApp Web.
+  license:
+    name: MIT
+  title: WhatsMiau API
+  version: 0.3.2
+paths:
+  /:
+    get:
+      description: Returns API status, version, and WhatsApp Web client version
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RootResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      summary: API health check and info
+      tags:
+      - Root
+  /chat/markMessageAsRead/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Marks one or more messages as read in a WhatsApp conversation
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Messages to mark as read
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReadMessagesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Empty object on success
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Mark messages as read
+      tags:
+      - Chat
+  /chat/sendPresence/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Sends a presence status (composing/available) to a WhatsApp contact,
+        with optional auto-stop delay
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Presence parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendChatPresenceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Empty object on success
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send chat presence (typing indicator)
+      tags:
+      - Chat
+  /chat/whatsappNumbers/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Checks whether the given phone numbers are registered on WhatsApp
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Numbers to check
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.NumberExistsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of number existence results
+          schema:
+            items:
+              type: object
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Check if numbers exist on WhatsApp
+      tags:
+      - Chat
+  /instance:
+    get:
+      description: Returns all instances, optionally filtered by name or ID
+      parameters:
+      - description: Filter by instance name
+        in: query
+        name: instanceName
+        type: string
+      - description: Filter by instance ID
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ListInstancesResponse'
+            type: array
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List instances
+      tags:
+      - Instance
+    post:
+      consumes:
+      - application/json
+      description: Creates a new WhatsApp instance with the given name and optional
+        configuration
+      parameters:
+      - description: Instance creation parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateInstanceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CreateInstanceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new WhatsApp instance
+      tags:
+      - Instance
+  /instance/{id}:
+    delete:
+      description: Disconnects and permanently removes the specified instance
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeleteInstanceResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete an instance
+      tags:
+      - Instance
+  /instance/{id}/connect:
+    post:
+      description: Initiates connection for an instance. Returns a base64-encoded
+        QR code PNG if not yet connected, or a connected status message.
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ConnectInstanceResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Connect an instance (get QR code)
+      tags:
+      - Instance
+  /instance/{id}/logout:
+    post:
+      description: Disconnects the WhatsApp session for the given instance without
+        deleting it
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeleteInstanceResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Logout an instance
+      tags:
+      - Instance
+  /instance/{id}/status:
+    get:
+      description: Returns the current connection state of the specified instance
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StatusInstanceResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get instance connection state
+      tags:
+      - Instance
+  /instance/{instance}/chat/presence:
+    post:
+      consumes:
+      - application/json
+      description: Sends a presence status (composing/available) to a WhatsApp contact,
+        with optional auto-stop delay
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Presence parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendChatPresenceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Empty object on success
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send chat presence (typing indicator)
+      tags:
+      - Chat
+  /instance/{instance}/chat/read-messages:
+    post:
+      consumes:
+      - application/json
+      description: Marks one or more messages as read in a WhatsApp conversation
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Messages to mark as read
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReadMessagesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Empty object on success
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Mark messages as read
+      tags:
+      - Chat
+  /instance/{instance}/message/audio:
+    post:
+      consumes:
+      - application/json
+      description: Sends an audio file (by URL) as a WhatsApp voice message to the
+        specified number
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Audio message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendAudioRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendAudioResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send an audio message
+      tags:
+      - Message
+  /instance/{instance}/message/buttons:
+    post:
+      consumes:
+      - application/json
+      description: Sends an interactive buttons message (reply type) or PIX payment
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Buttons message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendButtonsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendButtonsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a buttons message
+      tags:
+      - Message
+  /instance/{instance}/message/document:
+    post:
+      consumes:
+      - application/json
+      description: Sends a document file by URL to a WhatsApp number
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Document parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendDocumentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendDocumentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a document
+      tags:
+      - Message
+  /instance/{instance}/message/image:
+    post:
+      consumes:
+      - application/json
+      description: Sends an image file by URL to a WhatsApp number
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Image parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendDocumentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendDocumentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send an image
+      tags:
+      - Message
+  /instance/{instance}/message/list:
+    post:
+      consumes:
+      - application/json
+      description: Sends an interactive list message with selectable options
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: List message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a list message
+      tags:
+      - Message
+  /instance/{instance}/message/text:
+    post:
+      consumes:
+      - application/json
+      description: Sends a text message to a WhatsApp number via the specified instance
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Text message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendTextRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendTextResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a text message
+      tags:
+      - Message
+  /instance/connect/{id}:
+    get:
+      description: Initiates connection for an instance. Returns a base64-encoded
+        QR code PNG if not yet connected, or a connected status message.
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ConnectInstanceResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Connect an instance (get QR code)
+      tags:
+      - Instance
+  /instance/connect/{id}/image:
+    get:
+      description: Returns the QR code as a raw PNG image buffer. Returns 204 No Content
+        if already connected.
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - image/png
+      responses:
+        "200":
+          description: QR code PNG image
+          schema:
+            type: file
+        "204":
+          description: Instance already connected
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get QR code as PNG image
+      tags:
+      - Instance
+  /instance/connectionState/{id}:
+    get:
+      description: Returns the current connection state of the specified instance
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StatusInstanceResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get instance connection state
+      tags:
+      - Instance
+  /instance/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new WhatsApp instance with the given name and optional
+        configuration
+      parameters:
+      - description: Instance creation parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateInstanceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CreateInstanceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new WhatsApp instance
+      tags:
+      - Instance
+  /instance/delete/{id}:
+    delete:
+      description: Disconnects and permanently removes the specified instance
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeleteInstanceResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete an instance
+      tags:
+      - Instance
+  /instance/fetchInstances:
+    get:
+      description: Returns all instances, optionally filtered by name or ID
+      parameters:
+      - description: Filter by instance name
+        in: query
+        name: instanceName
+        type: string
+      - description: Filter by instance ID
+        in: query
+        name: id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ListInstancesResponse'
+            type: array
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List instances
+      tags:
+      - Instance
+  /instance/logout/{id}:
+    delete:
+      description: Disconnects the WhatsApp session for the given instance without
+        deleting it
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DeleteInstanceResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Logout an instance
+      tags:
+      - Instance
+  /instance/update/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Updates webhook and proxy settings for the given instance
+      parameters:
+      - description: Instance ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateInstanceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.UpdateInstanceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update an existing instance
+      tags:
+      - Instance
+  /message/sendButtons/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Sends an interactive buttons message (reply type) or PIX payment
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Buttons message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendButtonsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendButtonsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a buttons message
+      tags:
+      - Message
+  /message/sendList/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Sends an interactive list message with selectable options
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: List message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a list message
+      tags:
+      - Message
+  /message/sendMedia/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Sends a media file (image or document) based on the mediatype field
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Media message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendMediaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendDocumentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a media message (Evolution API)
+      tags:
+      - Message
+  /message/sendReaction/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Sends an emoji reaction to a specific message identified by its
+        key
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Reaction parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendReactionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendReactionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a reaction to a message
+      tags:
+      - Message
+  /message/sendText/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Sends a text message to a WhatsApp number via the specified instance
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Text message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendTextRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendTextResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send a text message
+      tags:
+      - Message
+  /message/sendWhatsAppAudio/{instance}:
+    post:
+      consumes:
+      - application/json
+      description: Sends an audio file (by URL) as a WhatsApp voice message to the
+        specified number
+      parameters:
+      - description: Instance ID
+        in: path
+        name: instance
+        required: true
+        type: string
+      - description: Audio message parameters
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendAudioRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SendAudioResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Send an audio message
+      tags:
+      - Message
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: apikey
+    type: apiKey
+swagger: "2.0"

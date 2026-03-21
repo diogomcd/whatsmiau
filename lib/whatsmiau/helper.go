@@ -223,6 +223,40 @@ func extractMimetype(decodedData []byte, fileName string) (string, error) {
 	return detected, nil
 }
 
+func extractFromBase64(b64Data string) (string, string, []byte, error) {
+	var mimeType string
+	rawData := b64Data
+
+	if idx := strings.Index(b64Data, ","); idx != -1 {
+		header := b64Data[:idx]
+		rawData = b64Data[idx+1:]
+
+		if strings.HasPrefix(header, "data:") {
+			mimeType = strings.TrimSuffix(strings.TrimPrefix(header, "data:"), ";base64")
+		}
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(rawData)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	if mimeType == "" {
+		limit := 512
+		if len(decoded) < 512 {
+			limit = len(decoded)
+		}
+		mimeType = http.DetectContentType(decoded[:limit])
+	}
+
+	var extension string
+	if exts, _ := mime.ExtensionsByType(mimeType); len(exts) > 0 {
+		extension = strings.TrimPrefix(exts[0], ".")
+	}
+
+	return mimeType, extension, decoded, nil
+}
+
 func extractExtFromFile(fileName, mimeType string, file *os.File) string {
 	ext := filepath.Ext(fileName)
 	if ext == "" {
@@ -332,4 +366,23 @@ func configProxy(client *whatsmeow.Client, instanceProxy models.InstanceProxy) {
 
 func mountProxyUrl(proxy models.InstanceProxy) string {
 	return fmt.Sprintf("%s://%s:%s@%s:%s", proxy.ProxyProtocol, proxy.ProxyUsername, proxy.ProxyPassword, proxy.ProxyHost, proxy.ProxyPort)
+}
+
+// Adding or removing the 9th digit. Returns empty if not applicable.
+func buildBrazilianAlternate(number string) string {
+	if !strings.HasPrefix(number, "55") || len(number) < 12 || len(number) > 13 {
+		return ""
+	}
+
+	ddd := number[2:4]
+	local := number[4:]
+
+	switch {
+	case len(local) == 9 && local[0] == '9':
+		return "55" + ddd + local[1:]
+	case len(local) == 8:
+		return "55" + ddd + "9" + local
+	default:
+		return ""
+	}
 }

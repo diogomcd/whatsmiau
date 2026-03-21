@@ -24,6 +24,7 @@ type InstanceProxy struct {
 }
 
 type InstanceWebhook struct {
+	Enabled  *bool             `json:"enabled,omitempty"`
 	Url      string            `json:"url,omitempty"`
 	ByEvents *bool             `json:"byEvents,omitempty"`
 	Base64   *bool             `json:"base64,omitempty"`

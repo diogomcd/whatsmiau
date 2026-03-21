@@ -5,6 +5,7 @@ import (
 
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
+	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
 
@@ -83,4 +84,34 @@ func (s *Whatsmiau) NumberExists(ctx context.Context, data *NumberExistsRequest)
 	}
 
 	return results, nil
+}
+
+func (s *Whatsmiau) resolveJID(ctx context.Context, client *whatsmeow.Client, jid types.JID) types.JID {
+	if jid.Server != types.DefaultUserServer {
+		return jid
+	}
+
+	alternate := buildBrazilianAlternate(jid.User)
+	if alternate == "" {
+		return jid
+	}
+
+	resp, err := client.IsOnWhatsApp(ctx, []string{jid.User, alternate})
+	if err != nil {
+		zap.L().Warn("resolveJID: failed to check number on WhatsApp", zap.String("number", jid.User), zap.Error(err))
+		return jid
+	}
+
+	for _, item := range resp {
+		if item.IsIn {
+			resolved := jid
+			resolved.User = item.JID.User
+			if resolved.User != jid.User {
+				zap.L().Debug("resolveJID: brazilian number resolved", zap.String("from", jid.User), zap.String("to", resolved.User))
+			}
+			return resolved
+		}
+	}
+
+	return jid
 }

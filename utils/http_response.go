@@ -5,7 +5,7 @@ import (
 )
 
 type HTTPErrorResponse struct {
-	Error        error  `json:"error"`
+	Error        error  `json:"error" swaggertype:"string"`
 	Message      string `json:"message"`
 	ErrorMessage string `json:"errorMessage"`
 }

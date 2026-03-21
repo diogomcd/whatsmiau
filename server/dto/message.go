@@ -1,7 +1,7 @@
 package dto
 
 type SendTextRequest struct {
-	InstanceID       string                `param:"instance" validate:"required"`
+	InstanceID       string                `param:"instance" validate:"required" swaggerignore:"true"`
 	Number           string                `json:"number,omitempty" validate:"required"` // JID
 	Text             string                `json:"text,omitempty" validate:"required"`
 	Delay            int                   `json:"delay,omitempty" validate:"omitempty,min=0,max=300000"`
@@ -57,7 +57,7 @@ type ContextInfoQuotedMessage struct {
 }
 
 type SendAudioRequest struct {
-	InstanceID       string                `param:"instance"`
+	InstanceID       string                `param:"instance" swaggerignore:"true"`
 	Number           string                `json:"number,omitempty"`
 	Audio            string                `json:"audio,omitempty"`
 	Delay            int                   `json:"delay,omitempty" validate:"omitempty,min=0,max=300000"`
@@ -127,7 +127,7 @@ type SendMediaResponse struct {
 }
 
 type SendDocumentRequest struct {
-	InstanceID string `param:"instance"`
+	InstanceID string `param:"instance" swaggerignore:"true"`
 	Number     string `json:"number,omitempty"`
 	Mimetype   string `json:"mimetype,omitempty"`
 	Caption    string `json:"caption,omitempty"`
@@ -173,7 +173,7 @@ type SendDocumentResponseDataImage struct {
 }
 
 type SendReactionRequest struct {
-	InstanceID string `param:"instance" validate:"required"`
+	InstanceID string `param:"instance" validate:"required" swaggerignore:"true"`
 	Reaction   string `json:"reaction,omitempty" validate:"required,len=1"`
 	Key        struct {
 		RemoteJid string `json:"remoteJid,omitempty" validate:"required"`
@@ -190,4 +190,67 @@ type SendReactionResponse struct {
 	InstanceId       string             `json:"instanceId,omitempty"`
 	Source           string             `json:"source,omitempty"`
 	Status           string             `json:"status,omitempty"`
+}
+
+// --- sendList DTOs ---
+
+type SendListRequestSection struct {
+	Title string               `json:"title,omitempty"`
+	Rows  []SendListRequestRow `json:"rows,omitempty" validate:"required,min=1,dive"`
+}
+
+type SendListRequestRow struct {
+	Title       string `json:"title,omitempty" validate:"required"`
+	Description string `json:"description,omitempty"`
+	RowId       string `json:"rowId,omitempty" validate:"required"`
+}
+
+type SendListRequest struct {
+	InstanceID  string                   `param:"instance" validate:"required" swaggerignore:"true"`
+	Number      string                   `json:"number,omitempty" validate:"required"`
+	Title       string                   `json:"title,omitempty"`
+	Description string                   `json:"description,omitempty" validate:"required"`
+	ButtonText  string                   `json:"buttonText,omitempty"`
+	FooterText  string                   `json:"footerText,omitempty"`
+	Sections    []SendListRequestSection `json:"sections,omitempty" validate:"required,min=1,dive"`
+	Delay       int                      `json:"delay,omitempty" validate:"omitempty,min=0,max=300000"`
+}
+
+type SendListResponse struct {
+	Key              MessageResponseKey `json:"key"`
+	Status           string             `json:"status"`
+	MessageType      string             `json:"messageType"`
+	MessageTimestamp int                `json:"messageTimestamp"`
+	InstanceId       string             `json:"instanceId"`
+}
+
+// --- sendButtons DTOs ---
+
+type SendButtonsRequestButton struct {
+	Type        string `json:"type,omitempty" validate:"required,oneof=reply pix"`
+	DisplayText string `json:"displayText,omitempty" validate:"required"`
+	Id          string `json:"id,omitempty"`
+	// PIX fields
+	Currency string `json:"currency,omitempty"`
+	Name     string `json:"name,omitempty" validate:"required_if=Type pix"`
+	KeyType  string `json:"keyType,omitempty" validate:"required_if=Type pix"`
+	Key      string `json:"key,omitempty" validate:"required_if=Type pix"`
+}
+
+type SendButtonsRequest struct {
+	InstanceID  string                     `param:"instance" validate:"required" swaggerignore:"true"`
+	Number      string                     `json:"number,omitempty" validate:"required"`
+	Title       string                     `json:"title,omitempty"`
+	Description string                     `json:"description,omitempty" validate:"required"`
+	Footer      string                     `json:"footer,omitempty"`
+	Buttons     []SendButtonsRequestButton `json:"buttons,omitempty" validate:"required,min=1,max=3,dive"`
+	Delay       int                        `json:"delay,omitempty" validate:"omitempty,min=0,max=300000"`
+}
+
+type SendButtonsResponse struct {
+	Key              MessageResponseKey `json:"key"`
+	Status           string             `json:"status"`
+	MessageType      string             `json:"messageType"`
+	MessageTimestamp int                `json:"messageTimestamp"`
+	InstanceId       string             `json:"instanceId"`
 }

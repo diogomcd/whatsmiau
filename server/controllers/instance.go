@@ -33,6 +33,20 @@ func NewInstances(repository interfaces.InstanceRepository, whatsmiau *whatsmiau
 	}
 }
 
+// Create godoc
+// @Summary      Create a new WhatsApp instance
+// @Description  Creates a new WhatsApp instance with the given name and optional configuration
+// @Tags         Instance
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        body  body      dto.CreateInstanceRequest  true  "Instance creation parameters"
+// @Success      201   {object}  dto.CreateInstanceResponse
+// @Failure      400   {object}  utils.HTTPErrorResponse
+// @Failure      422   {object}  utils.HTTPErrorResponse
+// @Failure      500   {object}  utils.HTTPErrorResponse
+// @Router       /instance [post]
+// @Router       /instance/create [post]
 func (s *Instance) Create(ctx echo.Context) error {
 	var request dto.CreateInstanceRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -75,6 +89,21 @@ func (s *Instance) Create(ctx echo.Context) error {
 	})
 }
 
+// Update godoc
+// @Summary      Update an existing instance
+// @Description  Updates webhook and proxy settings for the given instance
+// @Tags         Instance
+// @Accept       json
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id    path      string                     true  "Instance ID"
+// @Param        body  body      dto.UpdateInstanceRequest   true  "Update parameters"
+// @Success      201   {object}  dto.UpdateInstanceResponse
+// @Failure      400   {object}  utils.HTTPErrorResponse
+// @Failure      404   {object}  utils.HTTPErrorResponse
+// @Failure      422   {object}  utils.HTTPErrorResponse
+// @Failure      500   {object}  utils.HTTPErrorResponse
+// @Router       /instance/update/{id} [put]
 func (s *Instance) Update(ctx echo.Context) error {
 	var request dto.UpdateInstanceRequest
 	if err := ctx.Bind(&request); err != nil {
@@ -93,6 +122,7 @@ func (s *Instance) Update(ctx echo.Context) error {
 			Base64: &[]bool{request.Webhook.Base64}[0],
 			Events: request.Webhook.Events,
 		},
+		InstanceProxy: request.InstanceProxy,
 	})
 	if err != nil {
 		if errors.Is(err, instances.ErrorNotFound) {
@@ -107,6 +137,19 @@ func (s *Instance) Update(ctx echo.Context) error {
 	})
 }
 
+// List godoc
+// @Summary      List instances
+// @Description  Returns all instances, optionally filtered by name or ID
+// @Tags         Instance
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        instanceName  query     string  false  "Filter by instance name"
+// @Param        id            query     string  false  "Filter by instance ID"
+// @Success      200  {array}   dto.ListInstancesResponse
+// @Failure      422  {object}  utils.HTTPErrorResponse
+// @Failure      500  {object}  utils.HTTPErrorResponse
+// @Router       /instance [get]
+// @Router       /instance/fetchInstances [get]
 func (s *Instance) List(ctx echo.Context) error {
 	c := ctx.Request().Context()
 	var request dto.ListInstancesRequest
@@ -144,6 +187,19 @@ func (s *Instance) List(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, response)
 }
 
+// Connect godoc
+// @Summary      Connect an instance (get QR code)
+// @Description  Initiates connection for an instance. Returns a base64-encoded QR code PNG if not yet connected, or a connected status message.
+// @Tags         Instance
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id  path      string  true  "Instance ID"
+// @Success      200  {object}  dto.ConnectInstanceResponse
+// @Failure      404  {object}  utils.HTTPErrorResponse
+// @Failure      422  {object}  utils.HTTPErrorResponse
+// @Failure      500  {object}  utils.HTTPErrorResponse
+// @Router       /instance/{id}/connect [post]
+// @Router       /instance/connect/{id} [get]
 func (s *Instance) Connect(ctx echo.Context) error {
 	c := ctx.Request().Context()
 	var request dto.ConnectInstanceRequest
@@ -185,6 +241,19 @@ func (s *Instance) Connect(ctx echo.Context) error {
 	})
 }
 
+// ConnectQRBuffer godoc
+// @Summary      Get QR code as PNG image
+// @Description  Returns the QR code as a raw PNG image buffer. Returns 204 No Content if already connected.
+// @Tags         Instance
+// @Produce      png
+// @Security     ApiKeyAuth
+// @Param        id  path      string  true  "Instance ID"
+// @Success      200  {file}    binary  "QR code PNG image"
+// @Success      204  "Instance already connected"
+// @Failure      404  {object}  utils.HTTPErrorResponse
+// @Failure      422  {object}  utils.HTTPErrorResponse
+// @Failure      500  {object}  utils.HTTPErrorResponse
+// @Router       /instance/connect/{id}/image [get]
 func (s *Instance) ConnectQRBuffer(ctx echo.Context) error {
 	c := ctx.Request().Context()
 	var request dto.ConnectInstanceRequest
@@ -219,6 +288,19 @@ func (s *Instance) ConnectQRBuffer(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
 
+// Status godoc
+// @Summary      Get instance connection state
+// @Description  Returns the current connection state of the specified instance
+// @Tags         Instance
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id  path      string  true  "Instance ID"
+// @Success      200  {object}  dto.StatusInstanceResponse
+// @Failure      404  {object}  utils.HTTPErrorResponse
+// @Failure      422  {object}  utils.HTTPErrorResponse
+// @Failure      500  {object}  utils.HTTPErrorResponse
+// @Router       /instance/{id}/status [get]
+// @Router       /instance/connectionState/{id} [get]
 func (s *Instance) Status(ctx echo.Context) error {
 	c := ctx.Request().Context()
 	var request dto.ConnectInstanceRequest
@@ -252,6 +334,19 @@ func (s *Instance) Status(ctx echo.Context) error {
 	})
 }
 
+// Logout godoc
+// @Summary      Logout an instance
+// @Description  Disconnects the WhatsApp session for the given instance without deleting it
+// @Tags         Instance
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id  path      string  true  "Instance ID"
+// @Success      200  {object}  dto.DeleteInstanceResponse
+// @Failure      404  {object}  utils.HTTPErrorResponse
+// @Failure      422  {object}  utils.HTTPErrorResponse
+// @Failure      500  {object}  utils.HTTPErrorResponse
+// @Router       /instance/{id}/logout [post]
+// @Router       /instance/logout/{id} [delete]
 func (s *Instance) Logout(ctx echo.Context) error {
 	c := ctx.Request().Context()
 	var request dto.DeleteInstanceRequest
@@ -279,6 +374,18 @@ func (s *Instance) Logout(ctx echo.Context) error {
 	})
 }
 
+// Delete godoc
+// @Summary      Delete an instance
+// @Description  Disconnects and permanently removes the specified instance
+// @Tags         Instance
+// @Produce      json
+// @Security     ApiKeyAuth
+// @Param        id  path      string  true  "Instance ID"
+// @Success      200  {object}  dto.DeleteInstanceResponse
+// @Failure      422  {object}  utils.HTTPErrorResponse
+// @Failure      500  {object}  utils.HTTPErrorResponse
+// @Router       /instance/{id} [delete]
+// @Router       /instance/delete/{id} [delete]
 func (s *Instance) Delete(ctx echo.Context) error {
 	c := ctx.Request().Context()
 	var request dto.DeleteInstanceRequest

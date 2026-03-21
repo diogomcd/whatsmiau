@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/emersion/go-vcard"
 	"github.com/google/uuid"
+	"github.com/verbeux-ai/whatsmiau/env"
 	"github.com/verbeux-ai/whatsmiau/models"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
@@ -41,8 +43,6 @@ func (s *Whatsmiau) getInstance(id string) *models.Instance {
 		zap.L().Warn("no instanceCached found by instance", zap.String("instance", id))
 		return nil
 	}
-
-	s.instanceCache.Store(id, res[0])
 
 	return &res[0]
 }
@@ -77,34 +77,54 @@ func (s *Whatsmiau) getInstanceCached(id string) *models.Instance {
 }
 
 func (s *Whatsmiau) startEmitter() {
-	for event := range s.emitter {
-		data, err := json.Marshal(event.data)
-		if err != nil {
-			zap.L().Error("failed to marshal event", zap.Error(err))
-			return
-		}
+	workers := env.Env.EmitterWorkers
+	if workers <= 0 {
+		workers = 50
+	}
 
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, event.url, bytes.NewReader(data))
-		if err != nil {
-			zap.L().Error("failed to create request", zap.Error(err))
-			return
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := s.httpClient.Do(req)
-		if err != nil {
-			zap.L().Error("failed to send request", zap.Error(err))
-			return
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			res, err := io.ReadAll(resp.Body)
-			if err != nil {
-				zap.L().Error("failed to read response body", zap.Error(err))
-			} else {
-				zap.L().Error("error doing request", zap.Any("response", string(res)), zap.String("url", event.url))
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for event := range s.emitter {
+				s.processEmit(event)
 			}
+		}()
+	}
+	wg.Wait()
+}
+
+func (s *Whatsmiau) processEmit(event emitter) {
+	data, err := json.Marshal(event.data)
+	if err != nil {
+		zap.L().Error("failed to marshal event", zap.Error(err))
+		return
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, event.url, bytes.NewReader(data))
+	if err != nil {
+		zap.L().Error("failed to create request", zap.Error(err))
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		zap.L().Error("failed to send request", zap.Error(err))
+		return
+	}
+	defer func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		res, err := io.ReadAll(resp.Body)
+		if err != nil {
+			zap.L().Error("failed to read response body", zap.Error(err))
+		} else {
+			zap.L().Error("error doing request", zap.Any("response", string(res)), zap.String("url", event.url))
 		}
 	}
 }
@@ -124,14 +144,22 @@ func (s *Whatsmiau) Handle(id string) whatsmeow.EventHandler {
 				return
 			}
 
+			// Handle lifecycle events regardless of webhook enabled state
+			if _, ok := evt.(*events.LoggedOut); ok {
+				s.handleLoggedOut(id)
+				return
+			}
+
+			if instance.Webhook.Enabled != nil && !*instance.Webhook.Enabled {
+				return
+			}
+
 			eventMap := make(map[string]bool)
 			for _, event := range instance.Webhook.Events {
 				eventMap[event] = true
 			}
 
 			switch e := evt.(type) {
-			case *events.LoggedOut:
-				s.handleLoggedOut(id)
 			case *events.Message:
 				s.handleMessageEvent(id, instance, e, eventMap)
 			case *events.Receipt:
@@ -405,6 +433,10 @@ func (s *Whatsmiau) parseWAMessage(m *waE2E.Message) (string, *WookMessageRaw, *
 				SelectedRowId: selectedRowID,
 			},
 		}
+	} else if br := m.GetButtonsResponseMessage(); br != nil {
+		messageType = "buttonsResponseMessage"
+		raw.Conversation = br.GetSelectedDisplayText()
+		ci = br.GetContextInfo()
 	} else if img := m.GetImageMessage(); img != nil {
 		messageType = "imageMessage"
 		ci = img.GetContextInfo()
@@ -586,12 +618,20 @@ func (s *Whatsmiau) convertContactHistorySync(id string, event []*waHistorySync.
 			continue
 		}
 
-		url, _, err := s.getPic(id, jid)
+		url, b64Pic, err := s.getPic(id, jid)
 		if err != nil {
 			zap.L().Error("failed to get pic", zap.Error(err))
 		}
 
+		picUrl, err := s.uploadPic(context.Background(), jid.ToNonAD().String(), b64Pic)
+		if err != nil {
+			zap.L().Error("failed to upload pic", zap.Error(err))
+		} else {
+			url = picUrl
+		}
+
 		c.ProfilePicUrl = url
+		c.Base64Pic = b64Pic
 		result = append(result, c)
 	}
 
@@ -800,8 +840,29 @@ func (s *Whatsmiau) uploadMessageFile(ctx context.Context, instance *models.Inst
 	return urlResult, b64Result
 }
 
+func (s *Whatsmiau) uploadPic(ctx context.Context, waId, b64Data string) (string, error) {
+	if s.fileStorage == nil {
+		return "", nil
+	}
+
+	mimetype, ext, _, err := extractFromBase64(b64Data)
+	if err != nil {
+		return "", err
+	}
+
+	waIdTreated := strings.Split(waId, "@")
+
+	urlResult, err := s.fileStorage.UploadBase64IfDontExists(ctx, waIdTreated[0]+"."+ext, mimetype, b64Data)
+	if err != nil {
+		zap.L().Error("failed to upload image", zap.Error(err))
+		return "", err
+	}
+
+	return urlResult, nil
+}
+
 func (s *Whatsmiau) convertContact(id string, evt *events.Contact) *WookContact {
-	url, _, err := s.getPic(id, evt.JID)
+	url, b64Pic, err := s.getPic(id, evt.JID)
 	if err != nil {
 		zap.L().Error("failed to get pic", zap.Error(err))
 	}
@@ -821,6 +882,13 @@ func (s *Whatsmiau) convertContact(id string, evt *events.Contact) *WookContact 
 		return nil
 	}
 
+	picUrl, err := s.uploadPic(context.Background(), evt.JID.ToNonAD().String(), b64Pic)
+	if err != nil {
+		zap.L().Error("failed to upload pic", zap.Error(err))
+	} else {
+		url = picUrl
+	}
+
 	jid, lid := s.GetJidLid(context.Background(), id, evt.JID)
 	return &WookContact{
 		RemoteJid:     jid,
@@ -828,11 +896,12 @@ func (s *Whatsmiau) convertContact(id string, evt *events.Contact) *WookContact 
 		PushName:      name,
 		ProfilePicUrl: url,
 		InstanceId:    id,
+		Base64Pic:     b64Pic,
 	}
 }
 
 func (s *Whatsmiau) convertGroupInfo(id string, evt *events.GroupInfo) *WookContact {
-	url, _, err := s.getPic(id, evt.JID)
+	url, b64Pic, err := s.getPic(id, evt.JID)
 	if err != nil {
 		zap.L().Error("failed to get pic", zap.Error(err))
 	}
@@ -845,6 +914,13 @@ func (s *Whatsmiau) convertGroupInfo(id string, evt *events.GroupInfo) *WookCont
 		return nil
 	}
 
+	picUrl, err := s.uploadPic(context.Background(), evt.JID.ToNonAD().String(), b64Pic)
+	if err != nil {
+		zap.L().Error("failed to upload pic", zap.Error(err))
+	} else {
+		url = picUrl
+	}
+
 	jid, lid := s.GetJidLid(context.Background(), id, evt.JID)
 
 	return &WookContact{
@@ -853,11 +929,12 @@ func (s *Whatsmiau) convertGroupInfo(id string, evt *events.GroupInfo) *WookCont
 		ProfilePicUrl: url,
 		InstanceId:    id,
 		RemoteLid:     lid,
+		Base64Pic:     b64Pic,
 	}
 }
 
 func (s *Whatsmiau) convertPushName(id string, evt *events.PushName) *WookContact {
-	url, _, err := s.getPic(id, evt.JID)
+	url, b64Pic, err := s.getPic(id, evt.JID)
 	if err != nil {
 		zap.L().Error("failed to get pic", zap.Error(err))
 	}
@@ -875,6 +952,13 @@ func (s *Whatsmiau) convertPushName(id string, evt *events.PushName) *WookContac
 		return nil
 	}
 
+	picUrl, err := s.uploadPic(context.Background(), evt.JID.ToNonAD().String(), b64Pic)
+	if err != nil {
+		zap.L().Error("failed to upload pic", zap.Error(err))
+	} else {
+		url = picUrl
+	}
+
 	jid, lid := s.GetJidLid(context.Background(), id, evt.JID)
 
 	return &WookContact{
@@ -883,11 +967,12 @@ func (s *Whatsmiau) convertPushName(id string, evt *events.PushName) *WookContac
 		InstanceId:    id,
 		ProfilePicUrl: url,
 		RemoteLid:     lid,
+		Base64Pic:     b64Pic,
 	}
 }
 
 func (s *Whatsmiau) convertPicture(id string, evt *events.Picture) *WookContact {
-	url, b64, err := s.getPic(id, evt.JID)
+	url, b64Pic, err := s.getPic(id, evt.JID)
 	if err != nil {
 		zap.L().Error("failed to get pic", zap.Error(err))
 	}
@@ -896,19 +981,26 @@ func (s *Whatsmiau) convertPicture(id string, evt *events.Picture) *WookContact 
 		return nil
 	}
 
+	picUrl, err := s.uploadPic(context.Background(), evt.JID.ToNonAD().String(), b64Pic)
+	if err != nil {
+		zap.L().Error("failed to upload pic", zap.Error(err))
+	} else {
+		url = picUrl
+	}
+
 	jid, lid := s.GetJidLid(context.Background(), id, evt.JID)
 
 	return &WookContact{
 		RemoteJid:     jid,
 		InstanceId:    id,
-		Base64Pic:     b64,
+		Base64Pic:     b64Pic,
 		ProfilePicUrl: url,
 		RemoteLid:     lid,
 	}
 }
 
 func (s *Whatsmiau) convertBusinessName(id string, evt *events.BusinessName) *WookContact {
-	url, b64, err := s.getPic(id, evt.JID)
+	url, b64Pic, err := s.getPic(id, evt.JID)
 	if err != nil {
 		zap.L().Error("failed to get pic", zap.Error(err))
 	}
@@ -928,12 +1020,19 @@ func (s *Whatsmiau) convertBusinessName(id string, evt *events.BusinessName) *Wo
 		return nil
 	}
 
+	picUrl, err := s.uploadPic(context.Background(), evt.JID.ToNonAD().String(), b64Pic)
+	if err != nil {
+		zap.L().Error("failed to upload pic", zap.Error(err))
+	} else {
+		url = picUrl
+	}
+
 	jid, lid := s.GetJidLid(context.Background(), id, evt.JID)
 
 	return &WookContact{
 		RemoteJid:     jid,
 		InstanceId:    id,
-		Base64Pic:     b64,
+		Base64Pic:     b64Pic,
 		ProfilePicUrl: url,
 		PushName:      name,
 		RemoteLid:     lid,

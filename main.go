@@ -14,8 +14,25 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"golang.org/x/net/http2"
+
+	_ "github.com/verbeux-ai/whatsmiau/docs"
 )
 
+// @title           WhatsMiau API
+// @version         0.3.2
+// @description     WhatsMiau - WhatsApp API compatible with Evolution API. Provides instance management, messaging, and chat operations over WhatsApp Web.
+
+// @contact.name   Verbeux AI
+// @contact.url    https://github.com/verbeux-ai/whatsmiau
+
+// @license.name  MIT
+
+// @host      localhost:8080
+// @BasePath  /v1
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name apikey
 func main() {
 	if err := env.Load(); err != nil {
 		panic(err)
