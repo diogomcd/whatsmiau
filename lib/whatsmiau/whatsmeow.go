@@ -260,6 +260,7 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
 	}
 
 	zap.L().Debug("waiting for QR channel event", zap.String("id", id))
+	emittedConnecting := false
 	for {
 		select {
 		case <-ctx.Done(): // QR code expiration
@@ -277,6 +278,10 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
 			}
 			zap.L().Debug("received QR channel event", zap.String("id", id), zap.Any("evt", evt))
 			if evt.Event == "code" {
+				if !emittedConnecting {
+					s.emitConnectionUpdate(id, "connecting", 0)
+					emittedConnecting = true
+				}
 				s.qrCache.Store(id, evt.Code)
 				continue
 			}
