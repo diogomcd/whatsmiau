@@ -9,9 +9,10 @@ import (
 type Wook string
 
 const (
-	WookMessagesUpsert Wook = "messages.upsert"
-	WookMessagesUpdate Wook = "messages.update"
-	WookContactsUpsert Wook = "contacts.upsert"
+	WookMessagesUpsert  Wook = "messages.upsert"
+	WookMessagesUpdate  Wook = "messages.update"
+	WookMessagesDelete  Wook = "messages.delete"
+	WookContactsUpsert  Wook = "contacts.upsert"
 )
 
 type WookEvent[data any] struct {
@@ -244,6 +245,15 @@ const (
 	MessageStatusDeliveryAck WookMessageUpdateStatus = "DELIVERY_ACK"
 	MessageStatusRead        WookMessageUpdateStatus = "READ"
 )
+
+type WookMessageDeleteData struct {
+	Id          string `json:"id,omitempty"`
+	RemoteJid   string `json:"remoteJid,omitempty"`
+	FromMe      bool   `json:"fromMe"`
+	Participant string `json:"participant,omitempty"`
+	Status      string `json:"status,omitempty"`
+	InstanceId  string `json:"instanceId,omitempty"`
+}
 
 type WookMessageUpdateData struct {
 	MessageId      string                  `json:"messageId,omitempty"`

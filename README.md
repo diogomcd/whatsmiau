@@ -170,6 +170,7 @@ The application can send webhook events for the following actions:
 |-------------------|-----------------------------------------------------|
 | `MESSAGES_UPSERT` | Triggered when a new message is received.           |
 | `MESSAGES_UPDATE` | Triggered when a message status changes (e.g., read). |
+| `MESSAGES_DELETE` | Triggered when a message is deleted for everyone.   |
 | `CONTACTS_UPSERT` | Triggered when a contact is created or updated.     |
 
 
