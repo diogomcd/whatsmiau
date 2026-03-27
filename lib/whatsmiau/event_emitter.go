@@ -176,6 +176,12 @@ func (s *Whatsmiau) Handle(id string) whatsmeow.EventHandler {
 				s.handleGroupInfoEvent(id, instance, e, eventMap)
 			case *events.PushName:
 				s.handlePushNameEvent(id, instance, e, eventMap)
+			case *events.Connected:
+				s.handleConnectionUpdateEvent(id, instance, "open", 200, eventMap)
+			case *events.Disconnected:
+				s.handleConnectionUpdateEvent(id, instance, "close", 0, eventMap)
+			case *events.ConnectFailure:
+				s.handleConnectionUpdateEvent(id, instance, "close", int(e.Reason), eventMap)
 			default:
 				zap.L().Debug("unknown event", zap.String("type", fmt.Sprintf("%T", evt)), zap.Any("raw", evt))
 			}
@@ -451,6 +457,49 @@ func (s *Whatsmiau) handlePushNameEvent(id string, instance *models.Instance, e 
 	}
 
 	s.emit(wookData, instance.Webhook.Url)
+}
+
+func (s *Whatsmiau) handleConnectionUpdateEvent(id string, instance *models.Instance, state string, statusReason int, eventMap map[string]bool) {
+	if !eventMap["CONNECTION_UPDATE"] {
+		return
+	}
+
+	data := &WookConnectionUpdateData{
+		Instance:     instance.ID,
+		State:        state,
+		StatusReason: statusReason,
+	}
+
+	if state == "open" {
+		if client, ok := s.clients.Load(id); ok && client.Store.ID != nil {
+			data.Wuid = client.Store.ID.ToNonAD().String()
+			data.ProfileName = client.Store.PushName
+		}
+	}
+
+	wookEvent := &WookEvent[WookConnectionUpdateData]{
+		Instance: instance.ID,
+		Data:     data,
+		DateTime: time.Now(),
+		Event:    WookConnectionUpdate,
+	}
+
+	zap.L().Debug("connection update event", zap.String("instance", id), zap.Any("data", data))
+	s.emit(wookEvent, instance.Webhook.Url)
+}
+
+func (s *Whatsmiau) emitConnectionUpdate(id string, state string, statusReason int) {
+	instance := s.getInstanceCached(id)
+	if instance == nil || instance.Webhook.Enabled == nil || !*instance.Webhook.Enabled {
+		return
+	}
+
+	eventMap := make(map[string]bool)
+	for _, evt := range instance.Webhook.Events {
+		eventMap[evt] = true
+	}
+
+	s.handleConnectionUpdateEvent(id, instance, state, statusReason, eventMap)
 }
 
 // parseWAMessage converts a raw waE2E.Message into our internal representation.

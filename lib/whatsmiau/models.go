@@ -9,10 +9,11 @@ import (
 type Wook string
 
 const (
-	WookMessagesUpsert  Wook = "messages.upsert"
-	WookMessagesUpdate  Wook = "messages.update"
-	WookMessagesDelete  Wook = "messages.delete"
-	WookContactsUpsert  Wook = "contacts.upsert"
+	WookMessagesUpsert   Wook = "messages.upsert"
+	WookMessagesUpdate   Wook = "messages.update"
+	WookContactsUpsert   Wook = "contacts.upsert"
+	WookConnectionUpdate Wook = "connection.update"
+  WookMessagesDelete  Wook = "messages.delete"
 )
 
 type WookEvent[data any] struct {
@@ -277,3 +278,12 @@ type WookContact struct {
 }
 
 type WookContactUpsertData []WookContact
+
+type WookConnectionUpdateData struct {
+	Instance          string `json:"instance,omitempty"`
+	Wuid              string `json:"wuid,omitempty"`
+	ProfileName       string `json:"profileName,omitempty"`
+	ProfilePictureUrl string `json:"profilePictureUrl,omitempty"`
+	State             string `json:"state"`
+	StatusReason      int    `json:"statusReason,omitempty"`
+}
