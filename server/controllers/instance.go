@@ -84,6 +84,25 @@ func (s *Instance) Create(ctx echo.Context) error {
 		return utils.HTTPFail(ctx, http.StatusInternalServerError, err, "failed to create instance")
 	}
 
+	// If migration data is present, import the Baileys session
+	if request.Migration != nil {
+		result, err := s.whatsmiau.Migrate(c, request.InstanceName, request.Migration.Creds, request.Migration.PreKeys)
+		if err != nil {
+			zap.L().Error("failed to migrate instance", zap.Error(err))
+			return utils.HTTPFail(ctx, http.StatusInternalServerError, err, "failed to migrate instance")
+		}
+
+		return ctx.JSON(http.StatusCreated, dto.CreateInstanceResponse{
+			Instance: request.Instance,
+			Migration: &dto.MigrationResult{
+				JID:       result.JID,
+				LID:       result.LID,
+				PreKeys:   result.PreKeys,
+				Connected: result.Connected,
+			},
+		})
+	}
+
 	return ctx.JSON(http.StatusCreated, dto.CreateInstanceResponse{
 		Instance: request.Instance,
 	})

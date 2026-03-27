@@ -201,6 +201,13 @@ func (s *Whatsmiau) handleLoggedOut(id string) {
 	s.clients.Delete(id)
 }
 func (s *Whatsmiau) handleMessageEvent(id string, instance *models.Instance, e *events.Message, eventMap map[string]bool) {
+	if e.Message != nil {
+		if pm := e.Message.GetProtocolMessage(); pm != nil && pm.GetType() == waE2E.ProtocolMessage_REVOKE {
+			s.handleMessageDeleteEvent(id, instance, e, eventMap)
+			return
+		}
+	}
+
 	if !eventMap["MESSAGES_UPSERT"] {
 		return
 	}
@@ -239,6 +246,55 @@ func (s *Whatsmiau) handleMessageEvent(id string, instance *models.Instance, e *
 	}
 
 	s.emit(wookMessage, instance.Webhook.Url)
+}
+
+func (s *Whatsmiau) handleMessageDeleteEvent(id string, instance *models.Instance, e *events.Message, eventMap map[string]bool) {
+	if !eventMap["MESSAGES_DELETE"] {
+		return
+	}
+
+	if canIgnoreGroup(e, instance) {
+		return
+	}
+
+	if canIgnoreMessage(e) {
+		return
+	}
+
+	pm := e.Message.GetProtocolMessage()
+	pKey := pm.GetKey()
+	if pKey == nil {
+		return
+	}
+
+	ctx, c := context.WithTimeout(context.Background(), time.Second*5)
+	defer c()
+
+	remoteJid, _ := s.GetJidLid(ctx, id, e.Info.Chat)
+
+	keyRemoteJid := pKey.GetRemoteJID()
+	if keyRemoteJid == "" {
+		keyRemoteJid = remoteJid
+	}
+
+	deleteData := &WookMessageDeleteData{
+		Id:          pKey.GetID(),
+		RemoteJid:   keyRemoteJid,
+		FromMe:      pKey.GetFromMe(),
+		Participant: pKey.GetParticipant(),
+		Status:      "DELETED",
+		InstanceId:  instance.ID,
+	}
+
+	wookEvent := &WookEvent[WookMessageDeleteData]{
+		Instance: instance.ID,
+		Data:     deleteData,
+		DateTime: time.Now(),
+		Event:    WookMessagesDelete,
+	}
+
+	zap.L().Debug("message delete event", zap.String("instance", id), zap.Any("data", deleteData))
+	s.emit(wookEvent, instance.Webhook.Url)
 }
 
 func (s *Whatsmiau) handleReceiptEvent(id string, instance *models.Instance, e *events.Receipt, eventMap map[string]bool) {

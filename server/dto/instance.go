@@ -1,15 +1,43 @@
 package dto
 
-import "github.com/verbeux-ai/whatsmiau/models"
+import (
+	"encoding/json"
+
+	"github.com/verbeux-ai/whatsmiau/models"
+)
 
 type CreateInstanceRequest struct {
-	ID               string `json:"id,omitempty" validate:"required_without=InstanceName"`
-	InstanceName     string `json:"instanceName,omitempty" validate:"required_without=InstanceID"`
-	*models.Instance        // optional arguments
+	ID               string         `json:"id,omitempty" validate:"required_without=InstanceName"`
+	InstanceName     string         `json:"instanceName,omitempty" validate:"required_without=InstanceID"`
+	Migration        *MigrationData `json:"migration,omitempty"`
+	*models.Instance                // optional arguments
+}
+
+type MigrationData struct {
+	Creds   json.RawMessage   `json:"creds" validate:"required"`
+	PreKeys []MigrationPreKey `json:"preKeys,omitempty"`
+}
+
+type MigrationPreKey struct {
+	KeyID   uint32          `json:"keyId"`
+	Private MigrationBuffer `json:"private"`
+}
+
+type MigrationBuffer struct {
+	Type string `json:"type"`
+	Data string `json:"data"`
 }
 
 type CreateInstanceResponse struct {
 	*models.Instance
+	Migration *MigrationResult `json:"migration,omitempty"`
+}
+
+type MigrationResult struct {
+	JID       string `json:"jid"`
+	LID       string `json:"lid,omitempty"`
+	PreKeys   int    `json:"preKeysImported"`
+	Connected bool   `json:"connected"`
 }
 
 type UpdateInstanceRequest struct {
