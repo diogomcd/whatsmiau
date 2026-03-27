@@ -2,3 +2,7 @@
 .env
 *.json
 *.db
+
+# IA
+_bmad*
+.claude
