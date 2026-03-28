@@ -236,7 +236,7 @@ func (s *Instance) Connect(ctx echo.Context) error {
 		return utils.HTTPFail(ctx, http.StatusNotFound, err, "instance not found")
 	}
 
-	qrCode, err := s.whatsmiau.Connect(c, request.ID)
+	qrCode, pairingCode, err := s.whatsmiau.Connect(c, request.ID, request.Number)
 	if err != nil {
 		zap.L().Error("failed to connect instance", zap.Error(err))
 		return utils.HTTPFail(ctx, http.StatusInternalServerError, err, "failed to connect instance")
@@ -248,9 +248,10 @@ func (s *Instance) Connect(ctx echo.Context) error {
 			return utils.HTTPFail(ctx, http.StatusInternalServerError, err, "failed to encode qrcode")
 		}
 		return ctx.JSON(http.StatusOK, dto.ConnectInstanceResponse{
-			Message:   "If instance restart this instance could be lost if you cannot connect",
-			Connected: false,
-			Base64:    "data:image/png;base64," + base64.StdEncoding.EncodeToString(png),
+			Message:     "If instance restart this instance could be lost if you cannot connect",
+			Connected:   false,
+			Base64:      "data:image/png;base64," + base64.StdEncoding.EncodeToString(png),
+			PairingCode: pairingCode,
 		})
 	}
 
@@ -290,7 +291,7 @@ func (s *Instance) ConnectQRBuffer(ctx echo.Context) error {
 		return utils.HTTPFail(ctx, http.StatusNotFound, err, "instance not found")
 	}
 
-	qrCode, err := s.whatsmiau.Connect(c, request.ID)
+	qrCode, _, err := s.whatsmiau.Connect(c, request.ID, "")
 	if err != nil {
 		zap.L().Error("failed to connect instance", zap.Error(err))
 		return utils.HTTPFail(ctx, http.StatusInternalServerError, err, "failed to connect instance")
