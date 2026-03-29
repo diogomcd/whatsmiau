@@ -349,6 +349,9 @@ func (s *Whatsmiau) observeAndQrCode(ctx context.Context, id string, client *wha
 			qr, _ := s.qrCache.Load(id)
 			pc, _ := s.pairingCache.Load(id)
 			if qr != "" {
+				if phoneNumber != "" && pc == "" {
+					return qr, "", ctx.Err()
+				}
 				return qr, pc, nil
 			}
 			return "", "", ctx.Err()
