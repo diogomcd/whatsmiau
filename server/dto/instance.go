@@ -67,13 +67,15 @@ type ListInstancesResponse struct {
 }
 
 type ConnectInstanceRequest struct {
-	ID string `param:"id" validate:"required" swaggerignore:"true"`
+	ID     string `param:"id" validate:"required" swaggerignore:"true"`
+	Number string `json:"number" query:"number"`
 }
 
 type ConnectInstanceResponse struct {
-	Message   string `json:"message,omitempty"`
-	Connected bool   `json:"connected,omitempty"`
-	Base64    string `json:"base64,omitempty"`
+	Message     string `json:"message,omitempty"`
+	Connected   bool   `json:"connected,omitempty"`
+	Base64      string `json:"base64,omitempty"`
+	PairingCode string `json:"pairingCode,omitempty"`
 	*models.Instance
 }
 
