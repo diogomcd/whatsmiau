@@ -2,7 +2,7 @@ package dto
 
 
 type ManagerLoginRequest struct {
-	ApiKey string `form:"apiKey" validate:"required"`
+	ApiKey string `form:"apiKey"`
 }
 
 type ManagerCreateInstanceRequest struct {

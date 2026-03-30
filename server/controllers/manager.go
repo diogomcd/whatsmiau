@@ -88,7 +88,9 @@ func NewManager(repo interfaces.InstanceRepository, w *whatsmiau.Whatsmiau, tmpl
 
 func (s *Manager) LoginPage(ctx echo.Context) error {
 	setHTMLContentType(ctx)
-	return s.tmpl.Login.ExecuteTemplate(ctx.Response(), "login.html", nil)
+	return s.tmpl.Login.ExecuteTemplate(ctx.Response(), "login.html", map[string]interface{}{
+		"ApiKeyRequired": len(env.Env.ApiKey) > 0,
+	})
 }
 
 func (s *Manager) Login(ctx echo.Context) error {
@@ -99,10 +101,6 @@ func (s *Manager) Login(ctx echo.Context) error {
 	var req dto.ManagerLoginRequest
 	if err := ctx.Bind(&req); err != nil {
 		return s.renderLogin(ctx, "Erro ao processar requisição")
-	}
-
-	if err := s.validate.Struct(&req); err != nil {
-		return s.renderLogin(ctx, "Chave de API é obrigatória")
 	}
 
 	if len(env.Env.ApiKey) > 0 && req.ApiKey != env.Env.ApiKey {
@@ -121,8 +119,9 @@ func (s *Manager) Login(ctx echo.Context) error {
 
 func (s *Manager) renderLogin(ctx echo.Context, errMsg string) error {
 	setHTMLContentType(ctx)
-	return s.tmpl.Login.ExecuteTemplate(ctx.Response(), "login.html", map[string]string{
-		"Error": errMsg,
+	return s.tmpl.Login.ExecuteTemplate(ctx.Response(), "login.html", map[string]interface{}{
+		"Error":          errMsg,
+		"ApiKeyRequired": len(env.Env.ApiKey) > 0,
 	})
 }
 
