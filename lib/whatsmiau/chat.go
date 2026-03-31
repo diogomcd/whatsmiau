@@ -133,22 +133,17 @@ func (s *Whatsmiau) DeleteMessageForEveryone(ctx context.Context, req *DeleteMes
 	if client.Store == nil || client.Store.ID == nil {
 		return fmt.Errorf("device is not connected")
 	}
-	if req.RemoteJID == nil {
-		return fmt.Errorf("remote_jid is required")
-	}
-	if req.MessageID == "" {
-		return fmt.Errorf("message id is required")
-	}
 
 	chat := s.resolveJID(ctx, client, *req.RemoteJID)
 
 	var sender types.JID
 	if req.FromMe {
-		sender = types.EmptyJID
-	} else if chat.Server == types.GroupServer {
-		if req.ParticipantJID == nil || req.ParticipantJID.IsEmpty() {
-			return fmt.Errorf("participant is required when deleting another user's message in a group")
+		if chat.Server == types.GroupServer {
+			sender = client.Store.ID.ToNonAD()
+		} else {
+			sender = types.EmptyJID
 		}
+	} else if chat.Server == types.GroupServer {
 		sender = s.resolveJID(ctx, client, *req.ParticipantJID)
 	} else {
 		sender = chat
