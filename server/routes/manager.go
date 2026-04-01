@@ -2,8 +2,12 @@ package routes
 
 import (
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/labstack/echo/v4"
+	echomw "github.com/labstack/echo/v4/middleware"
+	"github.com/verbeux-ai/whatsmiau/env"
 	"github.com/verbeux-ai/whatsmiau/lib/whatsmiau"
 	"github.com/verbeux-ai/whatsmiau/repositories/instances"
 	"github.com/verbeux-ai/whatsmiau/server/controllers"
@@ -11,12 +15,25 @@ import (
 	"github.com/verbeux-ai/whatsmiau/services"
 )
 
+func managerOrigin() string {
+	parsed, err := url.Parse(env.Env.ManagerURL)
+	if err != nil || parsed.Host == "" {
+		return ""
+	}
+	return strings.TrimRight(parsed.Scheme+"://"+parsed.Host, "/")
+}
+
 func Manager(group *echo.Group) {
 	repo := instances.NewRedis(services.Redis())
 	w := whatsmiau.Get()
 	tmpl := controllers.ParseManagerTemplates()
 
 	controller := controllers.NewManager(repo, w, tmpl)
+
+	group.Use(echomw.CORSWithConfig(echomw.CORSConfig{
+		AllowOrigins: []string{managerOrigin()},
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+	}))
 
 	group.Static("/static", "server/static")
 
@@ -29,7 +46,6 @@ func Manager(group *echo.Group) {
 
 	auth := group.Group("",
 		middleware.Simplify(middleware.ManagerAuth),
-		middleware.Simplify(middleware.ManagerCSRF),
 	)
 
 	auth.POST("/logout", controller.Logout)

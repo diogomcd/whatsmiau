@@ -1,16 +1,13 @@
 package controllers
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html/template"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	qrcode "github.com/skip2/go-qrcode"
 	"github.com/verbeux-ai/whatsmiau/env"
@@ -20,13 +17,16 @@ import (
 	"github.com/verbeux-ai/whatsmiau/repositories/instances"
 	"github.com/verbeux-ai/whatsmiau/server/dto"
 	"github.com/verbeux-ai/whatsmiau/server/middleware"
-	"github.com/verbeux-ai/whatsmiau/services"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 )
 
-var webhookEventOptions = []string{
-	"messages", "messages.update", "messages.delete",
-	"connection.update", "contacts.set", "contacts.update", "contacts.upsert",
+var webhookEventOptions = map[whatsmiau.Wook]bool{
+	whatsmiau.WookMessagesUpsert:   true,
+	whatsmiau.WookMessagesUpdate:   true,
+	whatsmiau.WookContactsUpsert:   true,
+	whatsmiau.WookConnectionUpdate: true,
+	whatsmiau.WookMessagesDelete:   true,
 }
 
 type ManagerTemplates struct {
@@ -42,9 +42,9 @@ var managerFuncMap = template.FuncMap{
 		}
 		return *b
 	},
-	"hasEvent": func(events []string, event string) bool {
+	"hasEvent": func(events []string, event whatsmiau.Wook) bool {
 		for _, e := range events {
-			if e == event {
+			if whatsmiau.Wook(e) == event {
 				return true
 			}
 		}
@@ -94,10 +94,6 @@ func (s *Manager) LoginPage(ctx echo.Context) error {
 }
 
 func (s *Manager) Login(ctx echo.Context) error {
-	if !middleware.ManagerOriginAllowed(ctx) {
-		return s.renderLogin(ctx, "Não foi possível realizar o login")
-	}
-
 	var req dto.ManagerLoginRequest
 	if err := ctx.Bind(&req); err != nil {
 		return s.renderLogin(ctx, "Erro ao processar requisição")
@@ -150,19 +146,24 @@ func (s *Manager) ListInstances(ctx echo.Context) error {
 		return s.renderInstances(ctx, search, nil, "Erro ao listar instâncias")
 	}
 
-	cards := make([]dto.ManagerInstanceCard, 0, len(result))
-	for _, inst := range result {
-		status, err := s.whatsmiau.Status(inst.ID)
-		if err != nil {
-			zap.L().Error("failed to get instance status", zap.String("id", inst.ID), zap.Error(err))
-			status = "error"
-		}
-		cards = append(cards, dto.ManagerInstanceCard{
-			ID:        inst.ID,
-			RemoteJID: inst.RemoteJID,
-			Status:    string(status),
+	cards := make([]dto.ManagerInstanceCard, len(result))
+	g := new(errgroup.Group)
+	for i, inst := range result {
+		g.Go(func() error {
+			status, err := s.whatsmiau.Status(inst.ID)
+			if err != nil {
+				zap.L().Error("failed to get instance status", zap.String("id", inst.ID), zap.Error(err))
+				status = "error"
+			}
+			cards[i] = dto.ManagerInstanceCard{
+				ID:        inst.ID,
+				RemoteJID: inst.RemoteJID,
+				Status:    string(status),
+			}
+			return nil
 		})
 	}
+	g.Wait()
 
 	return s.renderInstances(ctx, search, cards, "")
 }
@@ -208,19 +209,24 @@ func (s *Manager) renderGrid(ctx echo.Context) error {
 		return s.renderGridData(ctx, nil)
 	}
 
-	cards := make([]dto.ManagerInstanceCard, 0, len(result))
-	for _, inst := range result {
-		status, err := s.whatsmiau.Status(inst.ID)
-		if err != nil {
-			zap.L().Error("failed to get instance status", zap.String("id", inst.ID), zap.Error(err))
-			status = "error"
-		}
-		cards = append(cards, dto.ManagerInstanceCard{
-			ID:        inst.ID,
-			RemoteJID: inst.RemoteJID,
-			Status:    string(status),
+	cards := make([]dto.ManagerInstanceCard, len(result))
+	g := new(errgroup.Group)
+	for i, inst := range result {
+		g.Go(func() error {
+			status, err := s.whatsmiau.Status(inst.ID)
+			if err != nil {
+				zap.L().Error("failed to get instance status", zap.String("id", inst.ID), zap.Error(err))
+				status = "error"
+			}
+			cards[i] = dto.ManagerInstanceCard{
+				ID:        inst.ID,
+				RemoteJID: inst.RemoteJID,
+				Status:    string(status),
+			}
+			return nil
 		})
 	}
+	g.Wait()
 	return s.renderGridData(ctx, cards)
 }
 
@@ -389,37 +395,30 @@ func (s *Manager) UpdateInstance(ctx echo.Context) error {
 		return ctx.String(http.StatusOK, "")
 	}
 
-	result, err := s.repo.List(c, id)
-	if err != nil || len(result) == 0 {
-		setHXTrigger(ctx, "showError", "instance_not_found")
-		return ctx.String(http.StatusOK, "")
-	}
-
-	inst := result[0]
-
-	inst.RejectCall = req.RejectCall != nil
-	inst.GroupsIgnore = req.GroupsIgnore != nil
-	inst.AlwaysOnline = req.AlwaysOnline != nil
-	inst.ReadMessages = req.ReadMessages != nil
-	inst.ReadStatus = req.ReadStatus != nil
-	inst.SyncFullHistory = req.SyncFullHistory != nil
-	inst.SyncRecentHistory = req.SyncRecentHistory != nil
-	inst.MsgCall = req.MsgCall
-
 	webhookByEvents := req.WebhookByEvents != nil
 	webhookBase64 := req.WebhookBase64 != nil
-	inst.Webhook.Url = req.WebhookURL
-	inst.Webhook.ByEvents = &webhookByEvents
-	inst.Webhook.Base64 = &webhookBase64
-	inst.Webhook.Events = req.WebhookEvents
 
-	inst.ProxyHost = req.ProxyHost
-	inst.ProxyPort = req.ProxyPort
-	inst.ProxyProtocol = req.ProxyProtocol
-	inst.ProxyUsername = req.ProxyUsername
-	inst.ProxyPassword = req.ProxyPassword
+	toUpdate := &models.Instance{
+		Webhook: models.InstanceWebhook{
+			Url:      req.WebhookURL,
+			ByEvents: &webhookByEvents,
+			Base64:   &webhookBase64,
+			Events:   req.WebhookEvents,
+		},
+		InstanceProxy: models.InstanceProxy{
+			ProxyHost:     req.ProxyHost,
+			ProxyPort:     req.ProxyPort,
+			ProxyProtocol: req.ProxyProtocol,
+			ProxyUsername: req.ProxyUsername,
+			ProxyPassword: req.ProxyPassword,
+		},
+	}
 
-	if err := s.saveInstance(c, &inst); err != nil {
+	if _, err := s.repo.Update(c, id, toUpdate); err != nil {
+		if errors.Is(err, instances.ErrorNotFound) {
+			setHXTrigger(ctx, "showError", "instance_not_found")
+			return ctx.String(http.StatusOK, "")
+		}
 		zap.L().Error("failed to update instance", zap.Error(err))
 		setHXTrigger(ctx, "showError", "save_error")
 		return ctx.String(http.StatusOK, "")
@@ -427,23 +426,6 @@ func (s *Manager) UpdateInstance(ctx echo.Context) error {
 
 	setHXTrigger(ctx, "showSuccess", "settings_saved")
 	return ctx.String(http.StatusOK, "")
-}
-
-/*
- * saveInstance saves the full instance to Redis, bypassing the repo.Update() merge.
- * repo.Update() only merges webhook/proxy — boolean fields and MsgCall are left out.
- * Since the manager form always sends all fields, we apply everything on the current
- * instance and save directly.
- * TODO: replace with a call to the API itself when available, to save all fields
- * (including those that repo.Update() does not merge).
- */
-func (s *Manager) saveInstance(c context.Context, inst *models.Instance) error {
-	data, err := json.Marshal(inst)
-	if err != nil {
-		return err
-	}
-	key := fmt.Sprintf("instance_%s", inst.ID)
-	return services.Redis().Set(c, key, data, redis.KeepTTL).Err()
 }
 
 func (s *Manager) StatusBadge(ctx echo.Context) error {

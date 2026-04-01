@@ -1,6 +1,5 @@
 package dto
 
-
 type ManagerLoginRequest struct {
 	ApiKey string `form:"apiKey"`
 }
@@ -16,16 +15,6 @@ type ManagerInstanceCard struct {
 }
 
 type ManagerUpdateInstanceRequest struct {
-	RejectCall        *bool `form:"rejectCall"`
-	GroupsIgnore      *bool `form:"groupsIgnore"`
-	AlwaysOnline      *bool `form:"alwaysOnline"`
-	ReadMessages      *bool `form:"readMessages"`
-	ReadStatus        *bool `form:"readStatus"`
-	SyncFullHistory   *bool `form:"syncFullHistory"`
-	SyncRecentHistory *bool `form:"syncRecentHistory"`
-
-	MsgCall string `form:"msgCall"`
-
 	WebhookURL      string   `form:"webhookUrl" validate:"omitempty,http_url"`
 	WebhookBase64   *bool    `form:"webhookBase64"`
 	WebhookByEvents *bool    `form:"webhookByEvents"`

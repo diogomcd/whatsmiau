@@ -43,44 +43,6 @@
 
     <form hx-put="/manager/instances/{{.Instance.ID}}" hx-swap="none">
         <div class="form-section">
-            <h3>Configurações</h3>
-            <div class="flags-grid">
-                <div class="checkbox-group">
-                    <input type="checkbox" id="rejectCall" name="rejectCall" value="true" {{if .Instance.RejectCall}}checked{{end}}>
-                    <label for="rejectCall">Rejeitar chamadas</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="groupsIgnore" name="groupsIgnore" value="true" {{if .Instance.GroupsIgnore}}checked{{end}}>
-                    <label for="groupsIgnore">Ignorar grupos</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="alwaysOnline" name="alwaysOnline" value="true" {{if .Instance.AlwaysOnline}}checked{{end}}>
-                    <label for="alwaysOnline">Sempre online</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="readMessages" name="readMessages" value="true" {{if .Instance.ReadMessages}}checked{{end}}>
-                    <label for="readMessages">Ler mensagens</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="readStatus" name="readStatus" value="true" {{if .Instance.ReadStatus}}checked{{end}}>
-                    <label for="readStatus">Ler status</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="syncFullHistory" name="syncFullHistory" value="true" {{if .Instance.SyncFullHistory}}checked{{end}}>
-                    <label for="syncFullHistory">Sync histórico completo</label>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="syncRecentHistory" name="syncRecentHistory" value="true" {{if .Instance.SyncRecentHistory}}checked{{end}}>
-                    <label for="syncRecentHistory">Sync histórico recente</label>
-                </div>
-            </div>
-            <div class="form-group" style="margin-top:1rem;">
-                <label for="msgCall">Mensagem de rejeição de chamada</label>
-                <input type="text" id="msgCall" name="msgCall" value="{{.Instance.MsgCall}}" placeholder="Não posso atender agora">
-            </div>
-        </div>
-
-        <div class="form-section">
             <h3>Webhook</h3>
             <div class="form-grid">
                 <div class="form-group">
@@ -98,7 +60,7 @@
             </div>
             <div class="flags-grid">
                 {{$events := .Instance.Webhook.Events}}
-                {{range $ev := .WebhookEventOptions}}
+                {{range $ev, $_ := .WebhookEventOptions}}
                 <div class="checkbox-group">
                     <input type="checkbox" name="webhookEvents" value="{{$ev}}" {{if hasEvent $events $ev}}checked{{end}}>
                     <label>{{$ev}}</label>

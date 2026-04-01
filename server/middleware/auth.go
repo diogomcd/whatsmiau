@@ -13,10 +13,6 @@ func Auth(ctx echo.Context, next echo.HandlerFunc) error {
 		return next(ctx)
 	}
 
-	if strings.HasPrefix(ctx.Request().URL.Path, "/manager") {
-		return next(ctx)
-	}
-
 	gotApikey := ctx.Request().Header.Get("apikey")
 	if len(env.Env.ApiKey) == 0 {
 		return next(ctx)

@@ -4,14 +4,16 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/verbeux-ai/whatsmiau/env"
 	"github.com/verbeux-ai/whatsmiau/services"
+	"go.uber.org/zap"
 )
 
 const (
@@ -32,6 +34,9 @@ func ManagerAuth(ctx echo.Context, next echo.HandlerFunc) error {
 	defer cancel()
 
 	exists, err := services.Redis().Exists(c, managerSessionPrefix+cookie.Value).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		zap.L().Error("failed to check manager session", zap.Error(err))
+	}
 	if err != nil || exists == 0 {
 		return ctx.Redirect(http.StatusFound, "/manager/login")
 	}
@@ -41,47 +46,6 @@ func ManagerAuth(ctx echo.Context, next echo.HandlerFunc) error {
 
 func isManagerSecure() bool {
 	return strings.HasPrefix(env.Env.ManagerURL, "https://")
-}
-
-func managerOrigin() string {
-	parsed, err := url.Parse(env.Env.ManagerURL)
-	if err != nil || parsed.Host == "" {
-		return ""
-	}
-	return strings.TrimRight(parsed.Scheme+"://"+parsed.Host, "/")
-}
-
-func ManagerOriginAllowed(ctx echo.Context) bool {
-	origin := ctx.Request().Header.Get("Origin")
-	if origin == "" {
-		if ref := ctx.Request().Header.Get("Referer"); ref != "" {
-			if parsed, err := url.Parse(ref); err == nil {
-				origin = parsed.Scheme + "://" + parsed.Host
-			}
-		}
-	}
-
-	if origin == "" {
-		return false
-	}
-
-	expected := managerOrigin()
-	if expected == "" {
-		return false
-	}
-
-	origin = strings.TrimRight(origin, "/")
-	return origin == expected
-}
-
-func ManagerCSRF(ctx echo.Context, next echo.HandlerFunc) error {
-	switch ctx.Request().Method {
-	case http.MethodPost, http.MethodPut, http.MethodDelete:
-		if !ManagerOriginAllowed(ctx) {
-			return ctx.String(http.StatusForbidden, "Forbidden")
-		}
-	}
-	return next(ctx)
 }
 
 func CreateSession(ctx echo.Context) (*http.Cookie, error) {

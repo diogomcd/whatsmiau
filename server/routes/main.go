@@ -19,9 +19,8 @@ func Load(app *echo.Echo) {
 		zap.L().Info("manager enabled", zap.String("url", env.Env.ManagerURL))
 	}
 
-	app.Pre(middleware.Simplify(middleware.Auth))
-
-	V1(app.Group("/v1"))
+	v1 := app.Group("/v1", middleware.Simplify(middleware.Auth))
+	V1(v1)
 }
 
 func V1(group *echo.Group) {
