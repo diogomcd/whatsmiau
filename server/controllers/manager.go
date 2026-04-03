@@ -273,7 +273,7 @@ func (s *Manager) ConnectInstance(ctx echo.Context) error {
 	c := ctx.Request().Context()
 	id := ctx.Param("id")
 
-	qr, err := s.whatsmiau.Connect(c, id)
+	qr, _, err := s.whatsmiau.Connect(c, id, "")
 	if err != nil {
 		zap.L().Error("failed to connect instance", zap.Error(err))
 		setHXTrigger(ctx, "showError", "connect_error")
