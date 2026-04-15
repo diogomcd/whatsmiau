@@ -102,34 +102,85 @@ func (s *Whatsmiau) processEmit(event emitter) {
 		return
 	}
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, event.url, bytes.NewReader(data))
+	const maxRetries = 2
+	backoff := time.Second
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			time.Sleep(backoff)
+			backoff *= 2
+		}
+
+		success, shouldRetry := s.doEmit(data, event.url)
+		if success || !shouldRetry {
+			return
+		}
+
+		if attempt < maxRetries {
+			zap.L().Warn("webhook delivery failed, retrying",
+				zap.String("url", event.url),
+				zap.Int("attempt", attempt+1),
+				zap.Int("maxRetries", maxRetries),
+			)
+		}
+	}
+
+	zap.L().Error("webhook delivery permanently failed after retries",
+		zap.String("url", event.url),
+	)
+}
+
+// doEmit performs a single webhook delivery attempt with a 10s timeout.
+// Returns (success, shouldRetry).
+func (s *Whatsmiau) doEmit(data []byte, url string) (bool, bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
 		zap.L().Error("failed to create request", zap.Error(err))
-		return
+		return false, false
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		zap.L().Error("failed to send request", zap.Error(err))
-		return
+		zap.L().Error("failed to send webhook", zap.Error(err), zap.String("url", url))
+		return false, true // network error, retry
 	}
 	defer func() {
 		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}()
 
-	if resp.StatusCode != http.StatusOK {
-		res, err := io.ReadAll(resp.Body)
-		if err != nil {
-			zap.L().Error("failed to read response body", zap.Error(err))
-		} else {
-			zap.L().Error("error doing request", zap.Any("response", string(res)), zap.String("url", event.url))
-		}
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		return true, false
 	}
+
+	if resp.StatusCode >= 500 {
+		res, _ := io.ReadAll(resp.Body)
+		zap.L().Error("webhook returned server error",
+			zap.Int("status", resp.StatusCode),
+			zap.String("response", string(res)),
+			zap.String("url", url),
+		)
+		return false, true // server error, retry
+	}
+
+	// 4xx: client error, don't retry
+	res, _ := io.ReadAll(resp.Body)
+	zap.L().Error("webhook returned client error",
+		zap.Int("status", resp.StatusCode),
+		zap.String("response", string(res)),
+		zap.String("url", url),
+	)
+	return false, false
 }
 
 func (s *Whatsmiau) emit(body any, url string) {
+	if url == "" {
+		return
+	}
 	s.emitter <- emitter{url, body}
 }
 

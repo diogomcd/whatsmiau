@@ -43,9 +43,10 @@ type MigrationResult struct {
 type UpdateInstanceRequest struct {
 	ID      string `json:"id,omitempty" param:"id" validate:"required" swaggerignore:"true"`
 	Webhook struct {
-		Base64 bool     `json:"base64,omitempty"`
-		URL    string   `json:"url,omitempty"`
-		Events []string `json:"events,omitempty"`
+		Enabled *bool    `json:"enabled,omitempty"`
+		Base64  bool     `json:"base64,omitempty"`
+		URL     string   `json:"url,omitempty"`
+		Events  []string `json:"events,omitempty"`
 	} `json:"webhook,omitempty"`
 	models.InstanceProxy
 }
@@ -67,13 +68,15 @@ type ListInstancesResponse struct {
 }
 
 type ConnectInstanceRequest struct {
-	ID string `param:"id" validate:"required" swaggerignore:"true"`
+	ID     string `param:"id" validate:"required" swaggerignore:"true"`
+	Number string `json:"number" query:"number"`
 }
 
 type ConnectInstanceResponse struct {
-	Message   string `json:"message,omitempty"`
-	Connected bool   `json:"connected,omitempty"`
-	Base64    string `json:"base64,omitempty"`
+	Message     string `json:"message,omitempty"`
+	Connected   bool   `json:"connected,omitempty"`
+	Base64      string `json:"base64,omitempty"`
+	PairingCode string `json:"pairingCode,omitempty"`
 	*models.Instance
 }
 

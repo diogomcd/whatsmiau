@@ -27,6 +27,7 @@ type Whatsmiau struct {
 	logger           waLog.Logger
 	repo             interfaces.InstanceRepository
 	qrCache          *xsync.Map[string, string]
+	pairingCache     *xsync.Map[string, string]
 	observerRunning  *xsync.Map[string, *whatsmeow.Client]
 	instanceCache    *xsync.Map[string, models.Instance]
 	lockConnection   *xsync.Map[string, *sync.Mutex]
@@ -117,6 +118,7 @@ func LoadMiau(ctx context.Context, container *sqlstore.Container) {
 		logger:          clientLog,
 		repo:            repo,
 		qrCache:         xsync.NewMap[string, string](),
+		pairingCache:    xsync.NewMap[string, string](),
 		instanceCache:   xsync.NewMap[string, models.Instance](),
 		observerRunning: xsync.NewMap[string, *whatsmeow.Client](),
 		lockConnection:  xsync.NewMap[string, *sync.Mutex](),
@@ -138,33 +140,25 @@ func LoadMiau(ctx context.Context, container *sqlstore.Container) {
 
 }
 
-func (s *Whatsmiau) Connect(ctx context.Context, id string) (string, error) {
+func (s *Whatsmiau) Connect(ctx context.Context, id string, phoneNumber string) (qrCode string, pairingCode string, err error) {
 	client, err := s.generateClient(ctx, id)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if client == nil {
-		return "", nil
+		return "", "", nil
 	}
 
 	if qr, ok := s.qrCache.Load(id); ok {
-		return qr, nil
+		pc, _ := s.pairingCache.Load(id)
+		return qr, pc, nil
 	}
 
-	qrCode, err := s.observeAndQrCode(ctx, id, client)
-	if err != nil {
-		return "", err
-	}
-
-	return qrCode, nil
+	return s.observeAndQrCode(ctx, id, client, phoneNumber)
 }
 
 func (s *Whatsmiau) generateClient(ctx context.Context, id string) (*whatsmeow.Client, error) {
-	lock, ok := s.lockConnection.Load(id)
-	if !ok {
-		lock = &sync.Mutex{}
-		s.lockConnection.Store(id, lock)
-	}
+	lock, _ := s.lockConnection.LoadOrStore(id, &sync.Mutex{})
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -224,7 +218,7 @@ func (s *Whatsmiau) hasSomeDevice(client *whatsmeow.Client) bool {
 	return true
 }
 
-func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
+func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string, phoneNumber string) {
 	existingClient, loaded := s.observerRunning.LoadOrStore(id, client)
 	if loaded {
 		if existingClient == client {
@@ -241,6 +235,7 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
 		if currentClient, ok := s.observerRunning.Load(id); ok && currentClient == client {
 			s.observerRunning.Delete(id)
 			s.qrCache.Delete(id)
+			s.pairingCache.Delete(id)
 		}
 	}()
 
@@ -261,6 +256,7 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
 
 	zap.L().Debug("waiting for QR channel event", zap.String("id", id))
 	emittedConnecting := false
+	pairingRequested := false
 	for {
 		select {
 		case <-ctx.Done(): // QR code expiration
@@ -283,6 +279,16 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
 					emittedConnecting = true
 				}
 				s.qrCache.Store(id, evt.Code)
+
+				if phoneNumber != "" && !pairingRequested {
+					pairingRequested = true
+					code, err := client.PairPhone(ctx, phoneNumber, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
+					if err != nil {
+						zap.L().Error("failed to request pairing code", zap.String("id", id), zap.Error(err))
+					} else {
+						s.pairingCache.Store(id, code)
+					}
+				}
 				continue
 			}
 
@@ -302,6 +308,7 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
 					zap.L().Error("failed to update instance after login", zap.Error(err))
 				}
 				s.qrCache.Delete(id)
+				s.pairingCache.Delete(id)
 				return
 			}
 
@@ -310,12 +317,12 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string) {
 	}
 }
 
-func (s *Whatsmiau) observeAndQrCode(ctx context.Context, id string, client *whatsmeow.Client) (string, error) {
+func (s *Whatsmiau) observeAndQrCode(ctx context.Context, id string, client *whatsmeow.Client, phoneNumber string) (string, string, error) {
 	ctx, c := context.WithTimeout(ctx, 15*time.Second)
 	defer c()
 
 	zap.L().Debug("starting observe and qr code", zap.String("id", id))
-	go s.observeConnection(client, id)
+	go s.observeConnection(client, id, phoneNumber)
 
 	ticker := time.NewTicker(200 * time.Millisecond)
 	defer ticker.Stop()
@@ -326,11 +333,28 @@ func (s *Whatsmiau) observeAndQrCode(ctx context.Context, id string, client *wha
 			qrCode, ok := s.qrCache.Load(id)
 			if ok && len(qrCode) > 0 {
 				zap.L().Debug("got qr code from cache", zap.String("id", id))
-				return qrCode, nil
+				if phoneNumber != "" {
+					// wait a bit more for pairing code to be generated
+					pc, pcOk := s.pairingCache.Load(id)
+					if pcOk {
+						return qrCode, pc, nil
+					}
+					continue
+				}
+				return qrCode, "", nil
 			}
 		case <-ctx.Done():
 			zap.L().Debug("observe and qr code context done", zap.String("id", id), zap.Error(ctx.Err()))
-			return "", ctx.Err()
+			// return whatever we have so far
+			qr, _ := s.qrCache.Load(id)
+			pc, _ := s.pairingCache.Load(id)
+			if qr != "" {
+				if phoneNumber != "" && pc == "" {
+					return qr, "", ctx.Err()
+				}
+				return qr, pc, nil
+			}
+			return "", "", ctx.Err()
 		}
 	}
 }
@@ -395,6 +419,7 @@ func (s *Whatsmiau) Disconnect(id string) error {
 
 	client.Disconnect()
 	s.qrCache.Delete(id)
+	s.pairingCache.Delete(id)
 	return nil
 }
 
