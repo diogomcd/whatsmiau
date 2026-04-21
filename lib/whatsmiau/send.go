@@ -309,10 +309,6 @@ func (s *Whatsmiau) SendReaction(ctx context.Context, data *SendReactionRequest)
 		return nil, fmt.Errorf("remote_jid is required")
 	}
 
-	if len(data.Reaction) <= 0 {
-		return nil, fmt.Errorf("empty reaction, len: %d", len(data.Reaction))
-	}
-
 	if len(data.MessageID) <= 0 {
 		return nil, fmt.Errorf("invalid message_id")
 	}

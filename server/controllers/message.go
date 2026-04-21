@@ -369,9 +369,11 @@ func (s *Message) SendReaction(ctx echo.Context) error {
 		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid number format")
 	}
 
-	var emojiRegex = regexp.MustCompile(`[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]`)
-	if !emojiRegex.MatchString(request.Reaction) {
-		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid reaction, must be a emoji")
+	if request.Reaction != "" {
+		var emojiRegex = regexp.MustCompile(`[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]`)
+		if !emojiRegex.MatchString(request.Reaction) {
+			return utils.HTTPFail(ctx, http.StatusBadRequest, nil, "invalid reaction, must be a emoji")
+		}
 	}
 
 	sendReaction := &whatsmiau.SendReactionRequest{
@@ -379,7 +381,7 @@ func (s *Message) SendReaction(ctx echo.Context) error {
 		Reaction:   request.Reaction,
 		RemoteJID:  jid,
 		MessageID:  request.Key.Id,
-		FromMe:     request.Key.FromMe,
+		FromMe:     *request.Key.FromMe,
 	}
 
 	c := ctx.Request().Context()
@@ -392,7 +394,7 @@ func (s *Message) SendReaction(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, dto.SendReactionResponse{
 		Key: dto.MessageResponseKey{
 			RemoteJid: request.Key.RemoteJid,
-			FromMe:    true,
+			FromMe:    *request.Key.FromMe,
 			Id:        res.ID,
 		},
 		Status:           "sent",
