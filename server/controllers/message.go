@@ -207,6 +207,8 @@ func (s *Message) SendMedia(ctx echo.Context) error {
 	case "image":
 		request.SendDocumentRequest.Mimetype = "image/png"
 		return s.sendImage(ctx, request.SendDocumentRequest)
+	case "video":
+		return s.sendVideo(ctx, request.SendDocumentRequest, false)
 	}
 
 	return s.sendDocument(ctx, request.SendDocumentRequest)
