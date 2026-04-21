@@ -29,6 +29,8 @@ func NewMessages(repository interfaces.InstanceRepository, whatsmiau *whatsmiau.
 	}
 }
 
+var emojiRegex = regexp.MustCompile(`[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]`)
+
 // SendText godoc
 // @Summary      Send a text message
 // @Description  Sends a text message to a WhatsApp number via the specified instance
@@ -369,11 +371,8 @@ func (s *Message) SendReaction(ctx echo.Context) error {
 		return utils.HTTPFail(ctx, http.StatusBadRequest, err, "invalid number format")
 	}
 
-	if request.Reaction != "" {
-		var emojiRegex = regexp.MustCompile(`[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]`)
-		if !emojiRegex.MatchString(request.Reaction) {
-			return utils.HTTPFail(ctx, http.StatusBadRequest, nil, "invalid reaction, must be a emoji")
-		}
+	if request.Reaction != "" && !emojiRegex.MatchString(request.Reaction) {
+		return utils.HTTPFail(ctx, http.StatusBadRequest, nil, "invalid reaction, must be a emoji")
 	}
 
 	sendReaction := &whatsmiau.SendReactionRequest{
