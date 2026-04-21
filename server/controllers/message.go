@@ -29,7 +29,7 @@ func NewMessages(repository interfaces.InstanceRepository, whatsmiau *whatsmiau.
 	}
 }
 
-var emojiRegex = regexp.MustCompile(`[\x{1F600}-\x{1F64F}]|[\x{1F300}-\x{1F5FF}]|[\x{1F680}-\x{1F6FF}]|[\x{2600}-\x{26FF}]|[\x{2700}-\x{27BF}]`)
+var emojiRegex = regexp.MustCompile(`[\x{1F000}-\x{1FFFF}]|[\x{2300}-\x{23FF}]|[\x{2600}-\x{27BF}]|[\x{2B00}-\x{2BFF}]|[\x{2000}-\x{206F}]|[\x{2100}-\x{214F}]|[\x{2190}-\x{21FF}]`)
 
 // SendText godoc
 // @Summary      Send a text message
