@@ -312,12 +312,14 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string, phone
 
 				if phoneNumber != "" && !pairingRequested {
 					pairingRequested = true
-					code, err := client.PairPhone(ctx, phoneNumber, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
-					if err != nil {
-						zap.L().Error("failed to request pairing code", zap.String("id", id), zap.Error(err))
-					} else {
-						s.pairingCache.Store(id, code)
-					}
+					// Route through ensurePairingCode so that a concurrent
+					// fast-path caller (Connect() after the QR is cached)
+					// cannot trigger a second PairPhone RPC. WhatsApp
+					// invalidates older codes when a new one is issued, so
+					// duplicate requests lead to the frontend showing a
+					// stale code that WhatsApp rejects with "could not
+					// connect".
+					s.ensurePairingCode(ctx, id, client, phoneNumber)
 				}
 				continue
 			}
