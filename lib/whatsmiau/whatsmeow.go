@@ -151,10 +151,40 @@ func (s *Whatsmiau) Connect(ctx context.Context, id string, phoneNumber string) 
 
 	if qr, ok := s.qrCache.Load(id); ok {
 		pc, _ := s.pairingCache.Load(id)
+		// A QR is already cached but the pairing code may be missing. This
+		// happens when the observer was first started without a phoneNumber
+		// (QR-only attempt) or when it is still mid-flight on PairPhone.
+		// Request it explicitly so the caller does not race against an earlier
+		// observer goroutine.
+		if phoneNumber != "" && pc == "" {
+			pc = s.ensurePairingCode(ctx, id, client, phoneNumber)
+		}
 		return qr, pc, nil
 	}
 
 	return s.observeAndQrCode(ctx, id, client, phoneNumber)
+}
+
+// ensurePairingCode returns the cached pairing code, or requests a fresh one
+// from WhatsApp and stores it. Safe to call concurrently with the observer
+// goroutine — the per-instance lock plus the cache double-check prevent
+// duplicate PairPhone RPCs.
+func (s *Whatsmiau) ensurePairingCode(ctx context.Context, id string, client *whatsmeow.Client, phoneNumber string) string {
+	lock, _ := s.lockConnection.LoadOrStore(id, &sync.Mutex{})
+	lock.Lock()
+	defer lock.Unlock()
+
+	if pc, ok := s.pairingCache.Load(id); ok && pc != "" {
+		return pc
+	}
+
+	code, err := client.PairPhone(ctx, phoneNumber, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
+	if err != nil {
+		zap.L().Error("failed to request pairing code (fast-path)", zap.String("id", id), zap.Error(err))
+		return ""
+	}
+	s.pairingCache.Store(id, code)
+	return code
 }
 
 func (s *Whatsmiau) generateClient(ctx context.Context, id string) (*whatsmeow.Client, error) {
