@@ -22,15 +22,16 @@ import (
 )
 
 type Whatsmiau struct {
-	clients          *xsync.Map[string, *whatsmeow.Client]
-	container        *sqlstore.Container
-	logger           waLog.Logger
-	repo             interfaces.InstanceRepository
-	qrCache          *xsync.Map[string, string]
-	pairingCache     *xsync.Map[string, string]
-	observerRunning  *xsync.Map[string, *whatsmeow.Client]
-	instanceCache    *xsync.Map[string, models.Instance]
-	lockConnection   *xsync.Map[string, *sync.Mutex]
+	clients             *xsync.Map[string, *whatsmeow.Client]
+	container           *sqlstore.Container
+	logger              waLog.Logger
+	repo                interfaces.InstanceRepository
+	qrCache             *xsync.Map[string, string]
+	pairingCache        *xsync.Map[string, string]
+	observerRunning     *xsync.Map[string, *whatsmeow.Client]
+	instanceCache       *xsync.Map[string, models.Instance]
+	lockConnection      *xsync.Map[string, *sync.Mutex]
+	connectPhoneNumber  *xsync.Map[string, string]
 	emitter          chan emitter
 	httpClient       *http.Client
 	fileStorage      interfaces.Storage
@@ -113,16 +114,17 @@ func LoadMiau(ctx context.Context, container *sqlstore.Container) {
 	}
 
 	instance = &Whatsmiau{
-		clients:         clients,
-		container:       container,
-		logger:          clientLog,
-		repo:            repo,
-		qrCache:         xsync.NewMap[string, string](),
-		pairingCache:    xsync.NewMap[string, string](),
-		instanceCache:   xsync.NewMap[string, models.Instance](),
-		observerRunning: xsync.NewMap[string, *whatsmeow.Client](),
-		lockConnection:  xsync.NewMap[string, *sync.Mutex](),
-		emitter:         make(chan emitter, env.Env.EmitterBufferSize),
+		clients:            clients,
+		container:          container,
+		logger:             clientLog,
+		repo:               repo,
+		qrCache:            xsync.NewMap[string, string](),
+		pairingCache:       xsync.NewMap[string, string](),
+		instanceCache:      xsync.NewMap[string, models.Instance](),
+		observerRunning:    xsync.NewMap[string, *whatsmeow.Client](),
+		lockConnection:     xsync.NewMap[string, *sync.Mutex](),
+		connectPhoneNumber: xsync.NewMap[string, string](),
+		emitter:            make(chan emitter, env.Env.EmitterBufferSize),
 		httpClient: &http.Client{
 			Timeout: time.Second * 30, // TODO: load from env
 		},
@@ -141,6 +143,14 @@ func LoadMiau(ctx context.Context, container *sqlstore.Container) {
 }
 
 func (s *Whatsmiau) Connect(ctx context.Context, id string, phoneNumber string) (qrCode string, pairingCode string, err error) {
+	// Tear down any in-flight QR/pair attempt when the client toggles between
+	// QR-only and pairing-code mode. Once whatsmeow's QR channel is open, the
+	// underlying session is "in QR mode"; calling PairPhone afterwards still
+	// returns a code but WhatsApp later rejects it with "não foi possível
+	// conectar". Starting fresh guarantees the session matches the method the
+	// user is about to use.
+	s.resetIfConnectMethodChanged(ctx, id, phoneNumber)
+
 	client, err := s.generateClient(ctx, id)
 	if err != nil {
 		return "", "", err
@@ -151,10 +161,84 @@ func (s *Whatsmiau) Connect(ctx context.Context, id string, phoneNumber string) 
 
 	if qr, ok := s.qrCache.Load(id); ok {
 		pc, _ := s.pairingCache.Load(id)
+		// A QR is already cached but the pairing code may be missing. This
+		// happens when the observer was first started without a phoneNumber
+		// (QR-only attempt) or when it is still mid-flight on PairPhone.
+		// Request it explicitly so the caller does not race against an earlier
+		// observer goroutine.
+		if phoneNumber != "" && pc == "" {
+			pc = s.ensurePairingCode(ctx, id, client, phoneNumber)
+		}
 		return qr, pc, nil
 	}
 
 	return s.observeAndQrCode(ctx, id, client, phoneNumber)
+}
+
+// resetIfConnectMethodChanged destroys an in-progress, not-yet-logged-in client
+// when the caller switches between QR-only and pairing-code methods. whatsmeow's
+// QR channel opens on the first connect and "locks" the session into QR mode —
+// calling PairPhone later still returns a code but WhatsApp refuses the typed
+// code. The only reliable way to switch methods is to discard the client and
+// start over.
+func (s *Whatsmiau) resetIfConnectMethodChanged(ctx context.Context, id, phoneNumber string) {
+	lock, _ := s.lockConnection.LoadOrStore(id, &sync.Mutex{})
+	lock.Lock()
+	defer lock.Unlock()
+
+	previous, hadPrevious := s.connectPhoneNumber.Load(id)
+	s.connectPhoneNumber.Store(id, phoneNumber)
+
+	if !hadPrevious || previous == phoneNumber {
+		return
+	}
+
+	client, ok := s.clients.Load(id)
+	if !ok {
+		return
+	}
+	if client.IsLoggedIn() {
+		return
+	}
+
+	zap.L().Info("reset pending connection due to connect method change",
+		zap.String("id", id),
+		zap.Bool("previous_had_number", previous != ""),
+		zap.Bool("current_has_number", phoneNumber != ""),
+	)
+
+	// Closing the client also closes its QR channel, which unblocks the
+	// observer goroutine and lets its deferred cleanup run.
+	client.Disconnect()
+	if err := s.deleteDeviceIfExists(ctx, client); err != nil {
+		zap.L().Error("failed to delete device on method change", zap.String("id", id), zap.Error(err))
+	}
+	s.clients.Delete(id)
+	s.qrCache.Delete(id)
+	s.pairingCache.Delete(id)
+	s.observerRunning.Delete(id)
+}
+
+// ensurePairingCode returns the cached pairing code, or requests a fresh one
+// from WhatsApp and stores it. Safe to call concurrently with the observer
+// goroutine — the per-instance lock plus the cache double-check prevent
+// duplicate PairPhone RPCs.
+func (s *Whatsmiau) ensurePairingCode(ctx context.Context, id string, client *whatsmeow.Client, phoneNumber string) string {
+	lock, _ := s.lockConnection.LoadOrStore(id, &sync.Mutex{})
+	lock.Lock()
+	defer lock.Unlock()
+
+	if pc, ok := s.pairingCache.Load(id); ok && pc != "" {
+		return pc
+	}
+
+	code, err := client.PairPhone(ctx, phoneNumber, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
+	if err != nil {
+		zap.L().Error("failed to request pairing code (fast-path)", zap.String("id", id), zap.Error(err))
+		return ""
+	}
+	s.pairingCache.Store(id, code)
+	return code
 }
 
 func (s *Whatsmiau) generateClient(ctx context.Context, id string) (*whatsmeow.Client, error) {
@@ -282,12 +366,14 @@ func (s *Whatsmiau) observeConnection(client *whatsmeow.Client, id string, phone
 
 				if phoneNumber != "" && !pairingRequested {
 					pairingRequested = true
-					code, err := client.PairPhone(ctx, phoneNumber, true, whatsmeow.PairClientChrome, "Chrome (Linux)")
-					if err != nil {
-						zap.L().Error("failed to request pairing code", zap.String("id", id), zap.Error(err))
-					} else {
-						s.pairingCache.Store(id, code)
-					}
+					// Route through ensurePairingCode so that a concurrent
+					// fast-path caller (Connect() after the QR is cached)
+					// cannot trigger a second PairPhone RPC. WhatsApp
+					// invalidates older codes when a new one is issued, so
+					// duplicate requests lead to the frontend showing a
+					// stale code that WhatsApp rejects with "could not
+					// connect".
+					s.ensurePairingCode(ctx, id, client, phoneNumber)
 				}
 				continue
 			}
